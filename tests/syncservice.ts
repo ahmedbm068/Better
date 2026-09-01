@@ -24,7 +24,8 @@ import * as habitsRepo from '../src/main/db/repo/habits'
 import * as miscRepo from '../src/main/db/repo/misc'
 
 import type { Sql, SqlValue, Statement } from '../server/src/db'
-import { SCHEMA } from '../server/src/schema'
+import type { ServerMigration } from '../server/src/schema'
+import { MIGRATIONS } from '../server/src/schema'
 import { pull, push } from '../server/src/changes'
 
 let passed = 0
@@ -62,11 +63,26 @@ function sqlite(file: string): Sql & { close(): void } {
         for (const s of statements) db.prepare(s.sql).run(...s.params)
       })()
     },
-    async migrate(statements: readonly string[]): Promise<void> {
-      // One statement per prepare, matching what the D1 adapter does. Using
-      // exec() here is what hid a production failure: D1 splits exec on
+    async migrate(migrations: readonly ServerMigration[]): Promise<void> {
+      // Mirrors the D1 adapter: versioned, one statement per prepare. Using
+      // exec() here is what hid a production failure once — D1 splits exec on
       // newlines, better-sqlite3 does not.
-      for (const sql of statements) db.prepare(sql).run()
+      db.prepare(
+        'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)'
+      ).run()
+      const row = db.prepare("SELECT value FROM schema_meta WHERE key = 'version'").get() as
+        | { value: string }
+        | undefined
+      const current = row ? Number(row.value) : 0
+      for (const migration of migrations) {
+        if (migration.version <= current) continue
+        db.transaction(() => {
+          for (const sql of migration.statements) db.prepare(sql).run()
+          db.prepare(
+            "INSERT OR REPLACE INTO schema_meta (key, value) VALUES ('version', ?)"
+          ).run(String(migration.version))
+        })()
+      }
     }
   }
 }
@@ -87,12 +103,11 @@ async function main(): Promise<void> {
   const userId = 'user-1'
 
   try {
-    await server.migrate(SCHEMA)
+    await server.migrate(MIGRATIONS)
     await server.run(
-      'INSERT INTO users (id, provider, provider_id, created_at, seeded) VALUES (?, ?, ?, ?, 1)',
+      'INSERT INTO users (id, email, created_at, seeded) VALUES (?, ?, ?, 1)',
       userId,
-      'test',
-      'test',
+      'device-test@example.com',
       Date.now()
     )
 

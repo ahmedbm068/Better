@@ -15,10 +15,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 import type { Sql, SqlValue, Statement } from '../server/src/db'
-import { SCHEMA } from '../server/src/schema'
+import type { ServerMigration } from '../server/src/schema'
+import { MIGRATIONS } from '../server/src/schema'
 import { handle } from '../server/src/index'
 import type { Env } from '../server/src/index'
-import { beginOAuth, completeOAuth, seedAccount, authenticate } from '../server/src/auth'
+import {
+  beginOAuth,
+  completeOAuth,
+  seedAccount,
+  authenticate,
+  setPassword,
+  signInWithPassword
+} from '../server/src/auth'
+import { rejectWeakPassword } from '../server/src/password'
 import type { IdentityProvider } from '../server/src/auth'
 import { push, pull } from '../server/src/changes'
 import type { SyncRows } from '../src/shared/sync'
@@ -61,19 +70,42 @@ function sqlite(file: string): Sql & { close(): void } {
         for (const s of statements) db.prepare(s.sql).run(...s.params)
       })()
     },
-    async migrate(statements: readonly string[]): Promise<void> {
-      // One statement per prepare, matching what the D1 adapter does. Using
-      // exec() here is what hid a production failure: D1 splits exec on
+    async migrate(migrations: readonly ServerMigration[]): Promise<void> {
+      // Mirrors the D1 adapter: versioned, one statement per prepare. Using
+      // exec() here is what hid a production failure once — D1 splits exec on
       // newlines, better-sqlite3 does not.
-      for (const sql of statements) db.prepare(sql).run()
+      db.prepare(
+        'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)'
+      ).run()
+      const row = db.prepare("SELECT value FROM schema_meta WHERE key = 'version'").get() as
+        | { value: string }
+        | undefined
+      const current = row ? Number(row.value) : 0
+      for (const migration of migrations) {
+        if (migration.version <= current) continue
+        db.transaction(() => {
+          for (const sql of migration.statements) db.prepare(sql).run()
+          db.prepare(
+            "INSERT OR REPLACE INTO schema_meta (key, value) VALUES ('version', ?)"
+          ).run(String(migration.version))
+        })()
+      }
     }
   }
 }
 
 /** Stands in for GitHub. The identity is whatever the code says it is. */
-const stubProvider = (id = '12345'): IdentityProvider => ({
+const stubProvider = (
+  id = '12345',
+  email = 'ahmed@example.com',
+  provider = 'github'
+): IdentityProvider => ({
   authorizeUrl: (state) => `https://example.invalid/authorize?state=${state}`,
-  exchange: async (code) => ({ provider: 'github', providerId: code === 'other' ? 'other' : id })
+  exchange: async (code) => ({
+    provider,
+    providerId: code === 'other' ? 'other' : id,
+    email
+  })
 })
 
 const env = (): Env =>
@@ -114,7 +146,7 @@ async function main(): Promise<void> {
   const now = Date.UTC(2026, 7, 1, 9, 0, 0)
 
   try {
-    await sql.migrate(SCHEMA)
+    await sql.migrate(MIGRATIONS)
 
     section('signing in')
     const authorizeUrl = await beginOAuth(sql, stubProvider())
@@ -146,7 +178,7 @@ async function main(): Promise<void> {
     check('the starter habits were created', seeded.habits?.length === 6)
     check('so was the avoid list', seeded.avoid_items?.length === 4)
 
-    const again = await seedAccount(sql, { id: user.id, seeded: 1 }, now)
+    const again = await seedAccount(sql, { id: user.id, email: user.email, seeded: 1 }, now)
     check('a second device seeds nothing', Object.keys(again).length === 0)
     const all = await pull(sql, user.id, 0)
     check('the account holds one set of ten', all.rows.habits?.length === 6, '6 habits, not 12')
@@ -309,6 +341,107 @@ async function main(): Promise<void> {
     const page = await pull(sql, user.id, 0, 3)
     check('a page is capped', page.rows.habits!.length + (page.rows.avoid_items?.length ?? 0) === 3)
     check('and says there is more', page.more === true)
+
+
+    section('one person, one account, whichever provider they use')
+    const gh = await beginOAuth(sql, stubProvider())
+    const ghState = new URL(gh).searchParams.get('state')!
+    const ghUser = await completeOAuth(sql, stubProvider('777', 'shared@example.com'), 'c', ghState)
+
+    const gg = await beginOAuth(sql, stubProvider())
+    const ggState = new URL(gg).searchParams.get('state')!
+    const ggUser = await completeOAuth(
+      sql,
+      stubProvider('888', 'shared@example.com', 'google'),
+      'c',
+      ggState
+    )
+    check(
+      'the same address reaches the same account',
+      ghUser.user.id === ggUser.user.id,
+      'signing up with one provider and returning with another'
+    )
+    check(
+      'both logins are recorded against it',
+      (await sql.all('SELECT provider FROM identities WHERE user_id = ?', ghUser.user.id)).length === 2
+    )
+
+    const gg2 = await beginOAuth(sql, stubProvider())
+    const other = await completeOAuth(
+      sql,
+      stubProvider('999', 'someone-else@example.com', 'google'),
+      'c',
+      new URL(gg2).searchParams.get('state')!
+    )
+    check('a different address does not', other.user.id !== ghUser.user.id)
+
+    section('an account made before addresses were collected')
+    await sql.run('UPDATE users SET email = NULL WHERE id = ?', ghUser.user.id)
+    const revisit = await beginOAuth(sql, stubProvider())
+    const backfilled = await completeOAuth(
+      sql,
+      stubProvider('777', 'shared@example.com'),
+      'c',
+      new URL(revisit).searchParams.get('state')!
+    )
+    check(
+      'signing in again fills the address in',
+      backfilled.user.email === 'shared@example.com',
+      'without it, password sign-in could never find the account'
+    )
+    check('and it is the same account', backfilled.user.id === ghUser.user.id)
+
+    section('passwords')
+    check('a short one is refused', rejectWeakPassword('hunter2') !== null)
+    check('a long one is fine', rejectWeakPassword('correct horse battery') === null)
+    check('a non-string is refused', rejectWeakPassword(12345678901) !== null)
+
+    await setPassword(sql, ghUser.user, 'correct horse battery')
+    const good = await signInWithPassword(sql, 'shared@example.com', 'correct horse battery')
+    check('signing in with it works', good.user.id === ghUser.user.id)
+    check('and issues a session', (await authenticate(sql, `Bearer ${good.token}`))?.id === ghUser.user.id)
+
+    check(
+      'the address is matched case-insensitively',
+      (await signInWithPassword(sql, 'SHARED@example.com', 'correct horse battery')).user.id ===
+        ghUser.user.id
+    )
+
+    const wrong = await signInWithPassword(sql, 'shared@example.com', 'not the password').then(
+      () => 'ACCEPTED',
+      (e: Error) => e.message
+    )
+    check('a wrong password is refused', wrong !== 'ACCEPTED', wrong)
+
+    const unknown = await signInWithPassword(sql, 'nobody@example.com', 'whatever').then(
+      () => 'ACCEPTED',
+      (e: Error) => e.message
+    )
+    check(
+      'an unknown address gives the same answer',
+      unknown === wrong,
+      'or it would reveal which addresses are registered'
+    )
+
+    const noPassword = await signInWithPassword(sql, 'someone-else@example.com', 'anything').then(
+      () => 'ACCEPTED',
+      (e: Error) => e.message
+    )
+    check('an account with no password cannot be signed into', noPassword !== 'ACCEPTED')
+
+    section('a password guesser is locked out')
+    for (let i = 0; i < 8; i++) {
+      await signInWithPassword(sql, 'shared@example.com', 'wrong').catch(() => undefined)
+    }
+    const locked = await signInWithPassword(sql, 'shared@example.com', 'correct horse battery').then(
+      () => 'ACCEPTED',
+      (e: Error) => e.message
+    )
+    check(
+      'even the right password is refused while locked',
+      locked.includes('Too many'),
+      locked
+    )
 
     section('the routes')
     const bearer = { Authorization: `Bearer ${token}` }

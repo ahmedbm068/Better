@@ -13,6 +13,8 @@
  * written against this interface cannot accidentally depend on holding a
  * transaction open across an await.
  */
+import type { ServerMigration } from './schema'
+
 export type SqlValue = string | number | null
 
 export interface Statement {
@@ -28,8 +30,8 @@ export interface Sql {
   run(sql: string, ...params: SqlValue[]): Promise<number>
   /** Runs every statement, or none of them. */
   batch(statements: Statement[]): Promise<void>
-  /** Applies the schema. Safe to call on every cold start. */
-  migrate(statements: readonly string[]): Promise<void>
+  /** Applies any migrations not yet recorded. Safe on every cold start. */
+  migrate(migrations: readonly ServerMigration[]): Promise<void>
 }
 
 /** The subset of the D1 binding this uses, typed locally to avoid a dependency. */
@@ -63,11 +65,30 @@ export function d1(database: D1Database): Sql {
       if (statements.length === 0) return
       await database.batch(statements.map((s) => bound(s.sql, s.params)))
     },
-    async migrate(statements: readonly string[]): Promise<void> {
+    async migrate(migrations: readonly ServerMigration[]): Promise<void> {
       // Not exec(): D1 splits that on newlines and treats each line as its own
       // statement, so a formatted CREATE TABLE fails with "incomplete input".
       // prepare() takes one statement whole, however it is laid out.
-      for (const sql of statements) await database.prepare(sql).run()
+      await database
+        .prepare('CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+        .run()
+
+      const row = (await database
+        .prepare("SELECT value FROM schema_meta WHERE key = 'version'")
+        .first<{ value: string }>()) as { value: string } | null
+      const current = row ? Number(row.value) : 0
+
+      for (const migration of migrations) {
+        if (migration.version <= current) continue
+        // Batched, so a migration lands whole or not at all — the version is
+        // only recorded in the same transaction that applied it.
+        await database.batch([
+          ...migration.statements.map((sql) => database.prepare(sql)),
+          database
+            .prepare("INSERT OR REPLACE INTO schema_meta (key, value) VALUES ('version', ?)")
+            .bind(String(migration.version))
+        ])
+      }
     }
   }
 }

@@ -9,16 +9,20 @@
 import type { D1Database } from './db'
 import { d1 } from './db'
 import type { Sql } from './db'
-import { SCHEMA } from './schema'
+import { MIGRATIONS } from './schema'
 import {
   authenticate,
   beginOAuth,
   completeOAuth,
   github,
+  google,
   seedAccount,
+  setPassword,
+  signInWithPassword,
   signOut,
   AuthError
 } from './auth'
+import { rejectWeakPassword } from './password'
 import { pull, push, PAGE_SIZE } from './changes'
 import type { SyncRows } from '@shared/sync'
 
@@ -33,6 +37,8 @@ export interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> }
   GITHUB_CLIENT_ID: string
   GITHUB_CLIENT_SECRET: string
+  GOOGLE_CLIENT_ID: string
+  GOOGLE_CLIENT_SECRET: string
   /** Where GitHub sends the browser back to, and where the app collects a token. */
   OAUTH_REDIRECT_URI: string
   /** Where the browser lands after a successful sign-in, token in the fragment. */
@@ -55,26 +61,42 @@ const problem = (message: string, status: number): Response => json({ error: mes
 export async function handle(request: Request, env: Env, sql: Sql): Promise<Response> {
   const url = new URL(request.url)
   const route = `${request.method} ${url.pathname}`
-  const provider = () =>
-    github(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET, env.OAUTH_REDIRECT_URI)
+  /** The provider named in the path, with its own callback URL. */
+  const provider = (name: string) => {
+    const redirect = env.OAUTH_REDIRECT_URI.replace(/\/auth\/\w+\/callback$/, `/auth/${name}/callback`)
+    if (name === 'google') {
+      return google(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET, redirect)
+    }
+    return github(env.GITHUB_CLIENT_ID, env.GITHUB_CLIENT_SECRET, redirect)
+  }
+  const providerName = url.pathname.split('/')[2] ?? 'github'
+  const known = providerName === 'github' || providerName === 'google'
 
   switch (route) {
     case 'GET /health':
       return json({ ok: true })
 
     case 'GET /auth/github/start':
+    case 'GET /auth/google/start':
       return Response.redirect(
-        await beginOAuth(sql, provider(), url.searchParams.get('desktop') === '1'),
+        await beginOAuth(sql, provider(providerName), url.searchParams.get('desktop') === '1'),
         302
       )
 
-    case 'GET /auth/github/callback': {
+    case 'GET /auth/github/callback':
+    case 'GET /auth/google/callback': {
       const code = url.searchParams.get('code')
       const state = url.searchParams.get('state')
       if (!code || !state) return problem('missing code or state', 400)
 
       try {
-        const { token, user, desktop } = await completeOAuth(sql, provider(), code, state)
+        if (!known) return problem('unknown provider', 404)
+        const { token, user, desktop } = await completeOAuth(
+          sql,
+          provider(providerName),
+          code,
+          state
+        )
         await seedAccount(sql, user)
 
         if (desktop) {
@@ -100,6 +122,25 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
         throw err
       }
     }
+    case 'POST /auth/login': {
+      let body: { email?: unknown; password?: unknown }
+      try {
+        body = (await request.json()) as { email?: unknown; password?: unknown }
+      } catch {
+        return problem('body was not JSON', 400)
+      }
+      if (typeof body.email !== 'string' || typeof body.password !== 'string') {
+        return problem('email and password are required', 400)
+      }
+
+      try {
+        const { token, user } = await signInWithPassword(sql, body.email, body.password)
+        return json({ token, user: { id: user.id, email: user.email } })
+      } catch (err) {
+        if (err instanceof AuthError) return problem(err.message, 401)
+        throw err
+      }
+    }
   }
 
   // Everything below needs a session.
@@ -108,7 +149,22 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
 
   switch (route) {
     case 'GET /me':
-      return json({ id: user.id })
+      return json({ id: user.id, email: user.email, hasPassword: user.hasPassword === 1 })
+
+    case 'POST /auth/password': {
+      let body: { password?: unknown }
+      try {
+        body = (await request.json()) as { password?: unknown }
+      } catch {
+        return problem('body was not JSON', 400)
+      }
+
+      const refusal = rejectWeakPassword(body.password)
+      if (refusal) return problem(refusal, 400)
+
+      await setPassword(sql, user, body.password as string)
+      return json({ ok: true })
+    }
 
     case 'POST /auth/signout':
       await signOut(sql, request.headers.get('Authorization'))
@@ -155,7 +211,7 @@ const isApiRoute = (pathname: string): boolean =>
 let schemaReady: Promise<void> | null = null
 
 function ensureSchema(sql: Sql): Promise<void> {
-  schemaReady ??= sql.migrate(SCHEMA).catch((err: unknown) => {
+  schemaReady ??= sql.migrate(MIGRATIONS).catch((err: unknown) => {
     schemaReady = null
     throw err
   })
