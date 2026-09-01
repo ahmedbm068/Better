@@ -1,0 +1,29 @@
+appId: com.better.app
+productName: Better
+copyright: Local-only personal tracker. No accounts, no telemetry.
+directories:
+  buildResources: build
+  output: release
+files:
+  - out/**
+  - resources/**
+  - '!**/*.map'
+  - '!**/{.eslintrc,.editorconfig,.prettierrc,tsconfig*.json}'
+asarUnpack:
+  - resources/**
+  - '**/node_modules/better-sqlite3/**'
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.png
+  artifactName: Better-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Better
+  deleteAppDataOnUninstall: false
+npmRebuild: true

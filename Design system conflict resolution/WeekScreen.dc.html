@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="tokens.css">
+</helmet>
+<div data-app data-theme="{{ theme }}" style="width:1400px;height:880px;display:flex;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;border:1px solid var(--line2)">
+
+  <nav style="width:188px;flex:none;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid var(--line)">
+      <div style="font-size:14px;font-weight:700;letter-spacing:.2em">I'M HIM</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.06em;margin-top:5px">LOCAL · OFFLINE</div>
+    </div>
+    <div style="display:flex;flex-direction:column;padding:8px 0;gap:1px">
+      <div style="padding:8px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">NOW</div>
+      <sc-for list="{{ navA }}" as="n" hint-placeholder-count="1">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">HISTORY</div>
+      <sc-for list="{{ navB }}" as="n" hint-placeholder-count="6">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">SETUP</div>
+      <sc-for list="{{ navC }}" as="n" hint-placeholder-count="2">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:14px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:1px">
+      <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">{{ dateLabel }}</div>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:500">{{ clock }}</div>
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text3);margin-top:3px">TUNIS · UTC+1</div>
+    </div>
+  </nav>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:16px 18px 0">
+
+    <div style="display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel);height:44px;flex:none">
+      <div style="display:flex;align-items:center;gap:14px;padding:0 16px;border-right:1px solid var(--line)">
+        <span style="font-size:16px;font-weight:600;min-width:250px">{{ weekLabel }}</span>
+        <span style="display:flex;gap:6px">
+          <button onClick="{{ prev }}" style="width:26px;height:24px;background:none;border:1px solid var(--line2);color:var(--text2);font-family:var(--mono);font-size:11px" style-hover="border-color:var(--accent);color:var(--text)">‹</button>
+          <button onClick="{{ next }}" style="width:26px;height:24px;background:none;border:1px solid var(--line2);color:var(--text2);font-family:var(--mono);font-size:11px" style-hover="border-color:var(--accent);color:var(--text)">›</button>
+          <button onClick="{{ thisWeek }}" style="height:24px;padding:0 9px;background:none;border:1px solid var(--line2);color:var(--text2);font-family:var(--mono);font-size:10px;letter-spacing:.1em" style-hover="border-color:var(--accent);color:var(--text)">THIS WEEK</button>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:13px;padding:0 16px;border-right:1px solid var(--line)">
+        <sc-for list="{{ segLegend }}" as="l" hint-placeholder-count="5">
+          <span style="display:flex;align-items:center;gap:6px">
+            <span style="width:9px;height:9px;background:{{ l.color }}"></span>
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text3)">{{ l.label }}</span>
+          </span>
+        </sc-for>
+      </div>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:16px;padding:0 16px;border-left:1px solid var(--line)">
+        <span style="display:flex;align-items:center;gap:7px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--done)">
+            <path d="M3 14.5V7.5a5 5 0 0 1 10 0v7"></path>
+            <path d="M1 14.5h14"></path>
+          </svg>
+          <span style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text3)">ALL FIVE PRAYERS</span>
+        </span>
+        <span style="display:flex;align-items:center;gap:7px">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" style="color:var(--accent)">
+            <path d="M1.5 11h9.5"></path>
+            <path d="M12.6 11h2"></path>
+            <path d="M3 14.5 13.5 4"></path>
+          </svg>
+          <span style="font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--text3)">SMOKE-FREE</span>
+        </span>
+      </div>
+    </div>
+
+    <div style="display:flex;margin-top:10px;flex:none;border:1px solid var(--line);background:var(--panel)">
+      <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
+        <div style="flex:1;padding:13px 18px 15px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:7px">
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--text3)">{{ t.label }}</span>
+          <span style="display:flex;align-items:baseline;gap:7px">
+            <span style="font-family:var(--mono);font-size:31px;font-weight:500;line-height:1;letter-spacing:-.02em;color:{{ t.color }}">{{ t.value }}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">{{ t.unit }}</span>
+            <span style="flex:1"></span>
+            <span style="font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:{{ t.deltaColor }}">{{ t.delta }}</span>
+          </span>
+          <span style="display:flex;align-items:flex-end;gap:3px;height:18px">
+            <sc-for list="{{ t.bars }}" as="b" hint-placeholder-count="7">
+              <span style="flex:1;height:{{ b.h }}px;background:{{ b.color }}"></span>
+            </sc-for>
+          </span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:1;min-height:0;display:flex;margin-top:10px;border:1px solid var(--line);background:var(--panel)">
+      <sc-for list="{{ days }}" as="d" hint-placeholder-count="7">
+        <div style="flex:1;min-width:0;display:flex;flex-direction:column;padding:11px 12px 0;background:{{ d.bg }};border-left:1px solid var(--line);border-top:2px solid {{ d.topRule }}">
+
+          <div style="display:flex;align-items:baseline;gap:7px">
+            <span style="font-size:13px;font-weight:700;letter-spacing:.1em;color:{{ d.nameColor }}">{{ d.name }}</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">{{ d.date }}</span>
+            <span style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;color:{{ d.rankColor }}">{{ d.rank }}</span>
+            <span style="flex:1"></span>
+            <span style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--accent)">{{ d.todayLabel }}</span>
+          </div>
+
+          <div style="display:flex;align-items:baseline;gap:5px;margin-top:9px">
+            <span style="font-family:var(--mono);font-size:36px;font-weight:500;line-height:1;letter-spacing:-.03em;color:{{ d.scoreColor }}">{{ d.score }}</span>
+            <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">{{ d.outOf }}</span>
+            <span style="flex:1"></span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--done);visibility:{{ d.fiveVis }}">
+              <path d="M3 14.5V7.5a5 5 0 0 1 10 0v7"></path>
+              <path d="M1 14.5h14"></path>
+            </svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" style="color:var(--accent);visibility:{{ d.cleanVis }}">
+              <path d="M1.5 11h9.5"></path>
+              <path d="M12.6 11h2"></path>
+              <path d="M3 14.5 13.5 4"></path>
+            </svg>
+          </div>
+
+          <div style="display:flex;gap:1px;height:7px;margin-top:10px;background:var(--wait)">
+            <sc-for list="{{ d.segs }}" as="s" hint-placeholder-count="5">
+              <span style="width:{{ s.w }}%;background:{{ s.color }}"></span>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:0;margin-top:13px;border-top:1px solid var(--line);padding-top:9px">
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--text3);padding-bottom:5px">PRAYERS {{ d.prayerCount }}</span>
+            <sc-for list="{{ d.prayers }}" as="p" hint-placeholder-count="5">
+              <span style="display:flex;align-items:center;gap:7px;height:17px">
+                <span style="width:8px;height:8px;background:{{ p.fill }};border:1px solid {{ p.border }}"></span>
+                <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:{{ p.color }}">{{ p.name }}</span>
+                <span style="flex:1"></span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">{{ p.time }}</span>
+              </span>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:0;margin-top:11px;border-top:1px solid var(--line);padding-top:9px">
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--text3);padding-bottom:5px">HABITS {{ d.habitCount }}</span>
+            <sc-for list="{{ d.habits }}" as="h" hint-placeholder-count="6">
+              <span style="display:flex;align-items:center;gap:7px;height:17px">
+                <span style="width:8px;height:8px;background:{{ h.fill }};border:1px solid {{ h.border }}"></span>
+                <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:{{ h.color }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.name }}</span>
+              </span>
+            </sc-for>
+          </div>
+
+          <div style="display:flex;gap:0;margin-top:11px;border-top:1px solid var(--line);padding-top:9px">
+            <span style="flex:1;display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text3)">FOCUS</span>
+              <span style="font-family:var(--mono);font-size:14px;color:{{ d.focusColor }}">{{ d.focus }}</span>
+            </span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:3px">
+              <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text3)">SLEEP</span>
+              <span style="font-family:var(--mono);font-size:14px;color:{{ d.sleepColor }}">{{ d.sleep }}</span>
+            </span>
+          </div>
+
+          <div style="display:flex;gap:6px;margin-top:9px;min-height:14px">
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--missed)">{{ d.slip }}</span>
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--grace)">{{ d.grace }}</span>
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3)">{{ d.untracked }}</span>
+          </div>
+
+          <div style="flex:1"></div>
+          <sc-if value="{{ d.editable }}" hint-placeholder-val="{{ true }}">
+            <input value="{{ d.noteVal }}" onChange="{{ d.setNote }}" placeholder="+ note" style="width:100%;border:0;border-top:1px solid var(--line);padding:7px 0 9px;font-family:var(--mono);font-size:11px;color:var(--text2)">
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="flex:none;height:24px;display:flex;align-items:center;gap:18px;border-top:1px solid var(--line);margin-top:8px">
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">~/imhim/data.json</span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">{{ recorded }}</span>
+      <span style="flex:1"></span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">TYPE IN A DAY TO ADD A NOTE</span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">[← →] WEEK</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:880},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark' | 'light'&quot;}}">
+const INSTALL = new Date(2025, 6, 16);
+const TODAY = new Date(2026, 7, 31);
+const M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const MF = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+const D = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const DN = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+const PRAYERS = [['FAJR','04:19'],['DHUHR','12:21'],['ASR','15:58'],['MAGHRIB','18:49'],['ISHA','20:14']];
+const HABITS = ['SPORT','READ','TALK','PROJECT','CLEAN','JOBS'];
+
+function pad(n){return String(n).padStart(2,'0');}
+function rnd(y,m,d,salt){
+  let x = (y*10000 + (m+1)*100 + d) * 2654435761 + salt * 40503;
+  x = (x ^ (x >>> 13)) * 1274126177;
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
+function hhmm(mins){ return Math.floor(mins/60) + ':' + pad(mins%60); }
+// ISO-8601 week number — the one source of truth for week labels
+function isoWeek(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  return Math.ceil((((d - new Date(d.getFullYear(),0,1))/86400000) + 1)/7);
+}
+const CURRENT_WEEK = isoWeek(TODAY);
+
+class Component extends DCLogic {
+  // monday of the last complete week
+  state = {now:new Date(), offset:-1, notes:{'2026-7-27':'best day this week'}};
+  componentDidMount(){ this.iv = setInterval(() => this.setState({now:new Date()}), 1000); }
+  componentWillUnmount(){ clearInterval(this.iv); }
+
+  monday(off){
+    const base = new Date(TODAY);
+    const shift = (base.getDay() + 6) % 7;           // monday-first
+    base.setDate(base.getDate() - shift + off*7);
+    return base;
+  }
+
+  day(date){
+    const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
+    if (date < INSTALL) return {kind:'untracked'};
+    if (date > TODAY) return {kind:'future'};
+    const partial = date.getTime() === TODAY.getTime();
+    // every item is rolled on its own, so completion is never a prefix run
+    const pDone = partial
+      ? [false, true, false, false, false]                       // matches Today: Fajr missed, Dhuhr prayed
+      : PRAYERS.map((p,k) => rnd(y,m,d,20+k) < 0.74);
+    const hDone = partial
+      ? [true, false, false, true, true, true]
+      : HABITS.map((h,k) => rnd(y,m,d,30+k) < 0.58);
+    // index 0 is the pinned nicotine item: it never slips, the streak is unbroken since install
+    const aClean = partial ? [true,true,true,true] : [0,1,2,3].map(k => k === 0 || rnd(y,m,d,40+k) < 0.93);
+    const AVOID_NAMES = ['NICOTINE','REELS','GAMES','WAKE TIME'];
+    const slipped = AVOID_NAMES.filter((n,k) => !aClean[k]);
+    const focus = partial ? 0 : Math.round(rnd(y,m,d,6)*190);
+    const sleep = 300 + Math.round(rnd(y,m,d,8)*180);
+    const np = pDone.filter(Boolean).length, nh = hDone.filter(Boolean).length, na = aClean.filter(Boolean).length;
+    // score is derived from its five components, never rolled independently
+    const comp = {
+      prayers: (np/5)*25,
+      habits: (nh/6)*25,
+      avoid: (na/4)*20,
+      sleep: partial ? 0 : Math.min(1, sleep/420)*15,
+      work: partial ? 0 : Math.min(1, focus/120)*15,
+    };
+    return {
+      kind:'tracked', partial,
+      score: Math.round(comp.prayers + comp.habits + comp.avoid + comp.sleep + comp.work),
+      comp, pDone, hDone,
+      prayersDone: np, habitsDone: nh,
+      focus, sleep,
+      slip: na < 4, slipNames: slipped, aClean,
+      grace: rnd(y,m,d,4) > 0.94,
+    };
+  }
+
+  renderVals(){
+    const now = this.state.now;
+    const mon = this.monday(this.state.offset);
+    const dates = [];
+    for (let i = 0; i < 7; i++){ const dt = new Date(mon); dt.setDate(mon.getDate()+i); dates.push(dt); }
+    const infos = dates.map(dt => this.day(dt));
+
+    const trackedScores = infos.filter(x => x.kind === 'tracked' && !x.partial).map(x => x.score);
+    const best = trackedScores.length ? Math.max.apply(null, trackedScores) : null;
+    const worst = trackedScores.length ? Math.min.apply(null, trackedScores) : null;
+    const SEGC = [
+      'var(--accent)',
+      'color-mix(in oklab, var(--accent) 55%, var(--panel))',
+      'var(--done)',
+      'var(--grace)',                                          // sleep — reads distinctly from work
+      'color-mix(in oklab, var(--grace) 45%, var(--panel))',   // work
+    ];
+
+    const days = dates.map((dt, i) => {
+      const info = infos[i];
+      const isToday = dt.getTime() === TODAY.getTime();
+      const key = dt.getFullYear() + '-' + dt.getMonth() + '-' + dt.getDate();
+      const tracked = info.kind === 'tracked';
+
+      const prayers = PRAYERS.map((p, k) => {
+        const done = tracked && info.pDone[k];
+        const missed = tracked && !done && (info.partial ? k === 0 : true);
+        return {
+          name: p[0], time: p[1],
+          fill: done ? 'var(--done)' : 'transparent',
+          border: done ? 'var(--done)' : missed ? 'var(--missed)' : 'var(--line2)',
+          color: done ? 'var(--text)' : missed ? 'var(--text2)' : 'var(--text3)',
+        };
+      });
+      const habits = HABITS.map((h, k) => {
+        const done = tracked && info.hDone[k];
+        return {
+          name: h,
+          fill: done ? 'var(--done)' : 'transparent',
+          border: done ? 'var(--done)' : tracked ? 'var(--missed)' : 'var(--line2)',
+          color: done ? 'var(--text)' : 'var(--text2)',
+        };
+      });
+
+      return {
+        name: DN[i], date: pad(dt.getDate()) + ' ' + M[dt.getMonth()],
+        nameColor: isToday ? 'var(--accent)' : 'var(--text)',
+        todayLabel: isToday ? 'TODAY' : '',
+        topRule: isToday ? 'var(--accent)' : 'var(--line)',
+        score: tracked ? String(info.score) : '—',
+        outOf: tracked ? '/100' : '',
+        scoreColor: tracked ? (isToday ? 'var(--accent)' : 'var(--text)') : 'var(--text3)',
+        bg: tracked ? 'color-mix(in oklab, var(--accent) ' + (info.score*0.16).toFixed(1) + '%, var(--panel))' : 'var(--panel)',
+        segs: tracked
+          ? ['prayers','habits','avoid','sleep','work'].map((k, j) => ({w: info.comp[k], color: SEGC[j]}))
+          : [],
+        rank: !tracked || info.partial ? '' : info.score === best && best !== worst ? 'BEST' : info.score === worst && best !== worst ? 'WORST' : '',
+        rankColor: tracked && info.score === best ? 'var(--done)' : 'var(--missed)',
+        prayerCount: tracked ? info.prayersDone + '/5' : '',
+        habitCount: tracked ? info.habitsDone + '/6' : '',
+        prayers, habits,
+        focus: tracked ? hhmm(info.focus) : '—',
+        focusColor: tracked && info.focus > 0 ? 'var(--text)' : 'var(--text3)',
+        sleep: tracked ? hhmm(info.sleep) : '—',
+        sleepColor: tracked ? (info.sleep >= 390 ? 'var(--text)' : 'var(--missed)') : 'var(--text3)',
+        fiveVis: tracked && info.prayersDone === 5 ? 'visible' : 'hidden',
+        cleanVis: tracked && info.aClean[0] ? 'visible' : 'hidden',
+        slip: info.slip ? 'SLIP · ' + info.slipNames.join(' + ') : '',
+        grace: info.grace ? 'GRACE' : '',
+        untracked: info.kind === 'untracked' ? 'UNTRACKED' : info.kind === 'future' ? 'UPCOMING' : '',
+        editable: tracked,
+        noteVal: this.state.notes[key] || '',
+        setNote: (e) => {
+          const v = e.target.value;
+          this.setState(s => ({notes: Object.assign({}, s.notes, {[key]: v})}));
+        },
+      };
+    });
+
+    const t = infos.filter(i => i.kind === 'tracked');
+    const prevInfos = [];
+    for (let i = 0; i < 7; i++){
+      const dt = this.monday(this.state.offset - 1); dt.setDate(dt.getDate()+i);
+      const inf = this.day(dt); if (inf.kind === 'tracked') prevInfos.push(inf);
+    }
+    const mean = (arr, f) => arr.length ? arr.reduce((a,b) => a + f(b), 0)/arr.length : null;
+    const avg = mean(t, x => x.score), pAvg = mean(prevInfos, x => x.score);
+    const prayerPct = t.length ? (t.reduce((a,b) => a + b.prayersDone, 0)/(t.length*5))*100 : null;
+    const focusTotal = t.reduce((a,b) => a + b.focus, 0);
+    const sleepAvg = mean(t, x => x.sleep);
+
+    const bars = (f, max) => infos.map(i => ({
+      h: i.kind === 'tracked' ? Math.max(2, Math.round((f(i)/max)*18)) : 2,
+      color: i.kind === 'tracked' ? 'var(--text2)' : 'var(--wait)',
+    }));
+    const delta = (a, b, unit) => {
+      if (a === null || b === null) return '';
+      const d = Math.round(a - b);
+      return (d > 0 ? '+' : '') + d + unit + ' VS LAST';
+    };
+
+    const mkNav = (arr) => arr.map(x => ({
+      label:x[0], meta:x[1],
+      bg: x[0] === 'Week' ? 'var(--panel2)' : 'transparent',
+      bar: x[0] === 'Week' ? 'var(--accent)' : 'transparent',
+      color: x[0] === 'Week' ? 'var(--text)' : 'var(--text2)',
+      weight: x[0] === 'Week' ? 600 : 400,
+      metaColor: x[0] === 'Week' ? 'var(--accent)' : 'var(--text3)',
+    }));
+
+    const sun = dates[6];
+    const weekNo = isoWeek(mon);
+
+    return {
+      theme: this.props.theme || 'dark',
+      navA: mkNav([['Today','47']]),
+      navB: mkNav([['Calendar','AUG'],['Week','W' + CURRENT_WEEK],['Work','6:12'],['Sleep','6:49'],['Stats','90D'],['Review','SUN']]),
+      navC: mkNav([['Lists','6 · 4'],['Settings','']]),
+      weekLabel: 'WEEK ' + weekNo + ' · ' + pad(mon.getDate()) + ' ' + M[mon.getMonth()] + ' – ' + pad(sun.getDate()) + ' ' + M[sun.getMonth()] + ' ' + sun.getFullYear(),
+      days,
+      segLegend: [
+        {label:'PRAYERS 25', color:SEGC[0]},
+        {label:'HABITS 25', color:SEGC[1]},
+        {label:'AVOID 20', color:SEGC[2]},
+        {label:'SLEEP 15', color:SEGC[3]},
+        {label:'WORK 15', color:SEGC[4]},
+      ],
+      tiles: [
+        {label:'AVG SCORE', value: avg === null ? '—' : String(Math.round(avg)), unit:'/100',
+         color: avg === null ? 'var(--text3)' : 'var(--accent)',
+         delta: delta(avg, pAvg, ''), deltaColor: avg !== null && pAvg !== null && avg >= pAvg ? 'var(--done)' : 'var(--missed)',
+         bars: bars(x => x.score, 100)},
+        {label:'PRAYERS', value: prayerPct === null ? '—' : Math.round(prayerPct) + '%', unit:'',
+         color: prayerPct === null ? 'var(--text3)' : 'var(--text)',
+         delta: t.reduce((a,b) => a + b.prayersDone, 0) + ' of ' + (t.length*5), deltaColor:'var(--text3)',
+         bars: bars(x => x.prayersDone, 5)},
+        {label:'FOCUSED', value: t.length ? hhmm(focusTotal) : '—', unit:'total',
+         color: t.length ? 'var(--text)' : 'var(--text3)',
+         delta: t.length ? 'AVG ' + hhmm(Math.round(focusTotal/t.length)) : '', deltaColor:'var(--text3)',
+         bars: bars(x => x.focus, 190)},
+        {label:'AVG SLEEP', value: sleepAvg === null ? '—' : hhmm(Math.round(sleepAvg)), unit:'',
+         color: sleepAvg === null ? 'var(--text3)' : 'var(--text)',
+         delta: sleepAvg !== null ? 'TARGET 7:00' : '', deltaColor:'var(--text3)',
+         bars: bars(x => x.sleep, 480)},
+      ],
+      recorded: t.length === 0 ? 'NO DATA THIS WEEK' : t.length + ' OF 7 DAYS RECORDED',
+      clock: pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
+      dateLabel: D[now.getDay()] + ' ' + pad(now.getDate()) + ' ' + M[now.getMonth()] + ' ' + now.getFullYear(),
+      prev: () => this.setState(s => ({offset: s.offset - 1})),
+      next: () => this.setState(s => ({offset: s.offset + 1})),
+      thisWeek: () => this.setState({offset: 0}),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="tokens.css">
+</helmet>
+<div data-app data-theme="{{ theme }}" style="width:1400px;height:880px;display:flex;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;border:1px solid var(--line2)">
+
+  <nav style="width:188px;flex:none;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid var(--line)">
+      <div style="font-size:14px;font-weight:700;letter-spacing:.2em">I'M HIM</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.06em;margin-top:5px">LOCAL · OFFLINE</div>
+    </div>
+    <div style="display:flex;flex-direction:column;padding:8px 0;gap:1px">
+      <div style="padding:8px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">NOW</div>
+      <sc-for list="{{ navA }}" as="n" hint-placeholder-count="1">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">HISTORY</div>
+      <sc-for list="{{ navB }}" as="n" hint-placeholder-count="6">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">SETUP</div>
+      <sc-for list="{{ navC }}" as="n" hint-placeholder-count="2">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:14px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:1px">
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3)">{{ dateLabel }}</div>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:500;letter-spacing:.01em">{{ clock }}</div>
+      <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text3);margin-top:3px">TUNIS · UTC+1</div>
+    </div>
+  </nav>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:16px 18px 0">
+
+    <div style="display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel);height:42px;flex:none">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 14px;border-right:1px solid var(--line)">
+        <span style="font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--text3)">SCORE</span>
+        <span style="font-family:var(--mono);font-size:20px;font-weight:500;line-height:1;color:var(--accent)">{{ total }}</span>
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">/100</span>
+      </div>
+      <div style="display:flex;align-items:center;padding:0 12px;border-right:1px solid var(--line)">
+        <svg width="132" height="26" viewBox="0 0 132 26" preserveAspectRatio="none">
+          <polyline points="{{ sparkPoints }}" fill="none" stroke="currentColor" stroke-width="1.25" style="color:var(--text2)"></polyline>
+          <circle cx="{{ sparkLastX }}" cy="{{ sparkLastY }}" r="2.25" style="fill:var(--accent)"></circle>
+        </svg>
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3);margin-left:8px">14 D</span>
+      </div>
+      <sc-for list="{{ strip }}" as="s" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 16px;border-right:1px solid var(--line)">
+          <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text3)">{{ s.label }}</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:500;color:{{ s.color }}">{{ s.value }}</span>
+        </div>
+      </sc-for>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:14px;padding:0 14px;border-left:1px solid var(--line)">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">ROLLOVER 03:00</span>
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">GRACE {{ graceLeft }}/1 THIS MONTH</span>
+      </div>
+    </div>
+
+    <section style="margin-top:10px;flex:none;background:var(--panel);border:1px solid var(--line);border-top:2px solid {{ heroRule }};display:flex">
+      <div style="flex:none;width:474px;padding:16px 22px 18px;border-right:1px solid var(--line)">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:6px;height:6px;background:{{ heroColor }}"></span>
+          <span style="font-size:10px;font-weight:700;letter-spacing:.13em;color:{{ heroKickerColor }}">{{ heroKicker }}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:18px;margin-top:10px">
+          <div style="font-size:38px;font-weight:600;letter-spacing:-.01em;line-height:1">{{ heroName }}</div>
+          <div style="font-family:var(--mono);font-size:66px;font-weight:500;line-height:.88;letter-spacing:-.03em;color:{{ heroColor }}">{{ heroCount }}</div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--text2);margin-top:12px">{{ heroSub }}</div>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:10px">
+          <span style="flex:1;height:5px;background:var(--wait);position:relative">
+            <span style="position:absolute;left:0;top:0;height:5px;background:{{ heroColor }};width:{{ heroPct }}%"></span>
+          </span>
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text3)">{{ heroPctLabel }}</span>
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0;padding:16px 24px 18px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:10px;font-weight:600;letter-spacing:.13em;color:var(--text3)">DAY WINDOW</span>
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">{{ elapsedLabel }}</span>
+        </div>
+        <div style="position:relative;height:2px;background:var(--line2);margin-top:30px">
+          <div style="position:absolute;left:0;top:0;height:2px;background:var(--text3);width:{{ dayPct }}%"></div>
+          <sc-for list="{{ bands }}" as="b" hint-placeholder-count="5">
+            <div style="position:absolute;top:-9px;height:6px;left:{{ b.left }}%;width:{{ b.width }}%;background:{{ b.color }}"></div>
+          </sc-for>
+          <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="6">
+            <div style="position:absolute;top:2px;left:{{ t.left }}%;width:1px;height:9px;background:{{ t.color }}"></div>
+          </sc-for>
+          <div style="position:absolute;top:-15px;left:{{ dayPct }}%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center">
+            <span style="font-family:var(--mono);font-size:10.5px;color:var(--accent);margin-bottom:2px">NOW</span>
+            <span style="width:1px;height:20px;background:var(--accent)"></span>
+          </div>
+        </div>
+        <div style="display:flex;margin-top:24px;border-top:1px solid var(--line)">
+          <sc-for list="{{ railCells }}" as="c" hint-placeholder-count="5">
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:9px 0 0 11px;border-left:1px solid var(--line)">
+              <span style="font-size:10.5px;font-weight:700;letter-spacing:.11em;color:{{ c.labelColor }}">{{ c.label }}</span>
+              <span style="font-family:var(--mono);font-size:13px;color:{{ c.timeColor }}">{{ c.time }}</span>
+            </span>
+          </sc-for>
+        </div>
+        <div style="display:flex;margin-top:13px">
+          <sc-for list="{{ legend }}" as="l" hint-placeholder-count="4">
+            <span style="display:flex;align-items:center;gap:6px;padding-right:18px">
+              <span style="width:7px;height:7px;background:{{ l.fill }};border:1px solid {{ l.border }}"></span>
+              <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">{{ l.label }}</span>
+            </span>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <div style="flex:1;min-height:0;display:flex;gap:10px;margin-top:10px">
+
+      <section style="flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+        <header style="display:flex;align-items:center;gap:16px;padding:0 18px;height:40px;flex:none;border-bottom:2px solid var(--line2)">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.13em">TODAY</span>
+          <span style="flex:1;height:3px;background:var(--wait);position:relative;max-width:180px">
+            <span style="position:absolute;left:0;top:0;height:3px;background:var(--done);width:{{ checkedPct }}%"></span>
+          </span>
+          <span style="font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--text2)">{{ doneLabel }}</span>
+          <span style="flex:1"></span>
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">CLICK A NAME FOR DETAIL</span>
+        </header>
+
+        <div style="flex:1;min-height:0;overflow:auto">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;padding:9px 18px 4px">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">PRAYERS</span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">TIME · LOGGED · STATE</span>
+          </div>
+          <sc-for list="{{ prayers }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;height:31px;padding:0 18px;border-bottom:1px solid var(--line);background:{{ p.rowBg }}" style-hover="background:var(--panel2)">
+              <button onClick="{{ p.toggle }}" style="flex:none;width:15px;height:15px;padding:0;background:{{ p.boxFill }};border:1.5px solid {{ p.boxBorder }};display:flex;align-items:center;justify-content:center">
+                <span style="font-family:var(--mono);font-size:10px;line-height:1;color:{{ p.markColor }}">{{ p.mark }}</span>
+              </button>
+              <span style="flex:none;width:132px;font-size:14px;font-weight:{{ p.weight }};color:{{ p.nameColor }}">{{ p.name }}</span>
+              <span style="flex:1;min-width:0;height:3px;background:var(--wait);position:relative;max-width:220px">
+                <span style="position:absolute;left:0;top:0;height:3px;background:{{ p.barColor }};width:{{ p.barPct }}%"></span>
+              </span>
+              <span style="flex:none;font-family:var(--mono);font-size:12px;color:var(--text2);width:46px;text-align:right">{{ p.time }}</span>
+              <span style="flex:none;font-family:var(--mono);font-size:10.5px;color:var(--text3);width:52px;text-align:right">{{ p.logged }}</span>
+              <span style="flex:none;font-family:var(--mono);font-size:10px;letter-spacing:.1em;width:86px;text-align:right;color:{{ p.stateColor }}">{{ p.state }}</span>
+            </div>
+          </sc-for>
+
+          <div style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 18px 4px">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">HABITS</span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">7 DAYS · STREAK / RECORD</span>
+          </div>
+          <sc-for list="{{ habits }}" as="h" hint-placeholder-count="6">
+            <div style="border-bottom:1px solid var(--line)">
+              <div style="display:flex;align-items:center;gap:12px;height:30px;padding:0 18px" style-hover="background:var(--panel2)">
+                <button onClick="{{ h.toggle }}" style="flex:none;width:15px;height:15px;padding:0;background:{{ h.boxFill }};border:1.5px solid {{ h.boxBorder }};display:flex;align-items:center;justify-content:center">
+                  <span style="font-family:var(--mono);font-size:10px;line-height:1;color:{{ h.markColor }}">{{ h.mark }}</span>
+                </button>
+                <button onClick="{{ h.expand }}" style="flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;font-size:13.5px;color:{{ h.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.name }}</button>
+                <span style="flex:none;font-family:var(--mono);font-size:10.5px;color:var(--text3);width:38px;text-align:right">{{ h.logged }}</span>
+                <button onClick="{{ h.useGrace }}" style="flex:none;background:none;border:1px solid {{ h.graceBorder }};height:19px;padding:0 7px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:{{ h.graceColor }};visibility:{{ h.graceVis }}" style-hover="border-color:var(--grace);color:var(--grace)">{{ h.graceLabel }}</button>
+                <span style="flex:none;display:flex;gap:3px;align-items:center;width:73px;justify-content:flex-end">
+                  <sc-for list="{{ h.dots }}" as="d" hint-placeholder-count="7">
+                    <span style="width:7px;height:7px;background:{{ d.fill }};border:1px solid {{ d.border }}"></span>
+                  </sc-for>
+                </span>
+                <span style="flex:none;font-family:var(--mono);font-size:12px;width:60px;text-align:right">{{ h.streak }}<span style="color:var(--text3)">{{ h.record }}</span></span>
+              </div>
+              <sc-if value="{{ h.open }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;gap:26px;padding:9px 18px 11px 45px;background:var(--panel2);border-top:1px solid var(--line)">
+                  <sc-for list="{{ h.detail }}" as="d" hint-placeholder-count="4">
+                    <span style="display:flex;flex-direction:column;gap:3px">
+                      <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text3)">{{ d.k }}</span>
+                      <span style="font-family:var(--mono);font-size:11.5px;color:{{ d.color }}">{{ d.v }}</span>
+                    </span>
+                  </sc-for>
+                  <span style="display:flex;flex-direction:column;gap:4px">
+                    <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--text3)">30 DAYS</span>
+                    <span style="display:flex;gap:2px">
+                      <sc-for list="{{ h.month }}" as="m" hint-placeholder-count="30">
+                        <span style="width:5px;height:11px;background:{{ m.fill }};border:1px solid {{ m.border }}"></span>
+                      </sc-for>
+                    </span>
+                  </span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <div style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 18px 4px">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">AVOID</span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">CLEAN DAYS</span>
+          </div>
+          <sc-for list="{{ avoids }}" as="a" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;gap:12px;height:30px;padding:0 18px;border-bottom:1px solid var(--line)" style-hover="background:var(--panel2)">
+              <button onClick="{{ a.toggle }}" style="flex:none;width:15px;height:15px;padding:0;background:{{ a.boxFill }};border:1.5px solid {{ a.boxBorder }};display:flex;align-items:center;justify-content:center">
+                <span style="font-family:var(--mono);font-size:10px;line-height:1;color:{{ a.markColor }}">{{ a.mark }}</span>
+              </button>
+              <span style="flex:1;min-width:0;font-size:13.5px;color:{{ a.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.name }}</span>
+              <span style="flex:none;font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--accent);width:26px;text-align:right">{{ a.pin }}</span>
+              <button onClick="{{ a.slip }}" style="flex:none;background:none;border:1px solid var(--line2);height:19px;padding:0 7px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3)" style-hover="border-color:var(--missed);color:var(--missed)">LOG SLIP</button>
+              <span style="flex:none;display:flex;gap:3px;align-items:center;width:73px;justify-content:flex-end">
+                <sc-for list="{{ a.dots }}" as="d" hint-placeholder-count="7">
+                  <span style="width:7px;height:7px;background:{{ d.fill }};border:1px solid {{ d.border }}"></span>
+                </sc-for>
+              </span>
+              <span style="flex:none;font-family:var(--mono);font-size:12px;width:60px;text-align:right">{{ a.streak }}<span style="color:var(--text3)">{{ a.record }}</span></span>
+            </div>
+          </sc-for>
+          <div style="height:8px"></div>
+        </div>
+      </section>
+
+      <aside style="width:300px;flex:none;display:flex;flex-direction:column;gap:10px">
+
+        <div style="background:var(--panel);border:1px solid var(--line);padding:12px 16px 13px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">SCORE BREAKDOWN</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">AVG 52</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;margin-top:11px">
+            <sc-for list="{{ score }}" as="s" hint-placeholder-count="5">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="width:66px;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text2)">{{ s.label }}</span>
+                <span style="flex:1;height:4px;background:var(--wait);position:relative">
+                  <span style="position:absolute;left:0;top:0;height:4px;background:{{ s.color }};width:{{ s.pct }}%"></span>
+                </span>
+                <span style="font-family:var(--mono);font-size:10.5px;color:var(--text2);width:40px;text-align:right">{{ s.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:var(--panel);border:1px solid var(--line);border-left:2px solid var(--accent);padding:12px 16px 13px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">SMOKE-FREE</span>
+            <span style="font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--accent)">PINNED</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:3px">
+            <span style="font-family:var(--mono);font-size:32px;font-weight:500;line-height:1;color:var(--accent)">412</span>
+            <span style="font-size:11.5px;color:var(--text2)">days</span>
+            <span style="flex:1"></span>
+            <span style="font-family:var(--mono);font-size:14px;font-weight:500">3 914</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--text3)">TND</span>
+          </div>
+          <div style="font-family:var(--mono);font-size:10.5px;color:var(--text3);margin-top:7px">SINCE 16 JUL 2025 · 20/DAY · 9.50/PACK</div>
+        </div>
+
+        <div style="background:var(--panel);border:1px solid var(--line);padding:12px 16px 14px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">FOCUSED</span>
+            <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">WEEK 6:12 · AVG / ACTIVE DAY 1:14</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:12px;margin-top:3px">
+            <span style="font-family:var(--mono);font-size:32px;font-weight:500;line-height:1;color:{{ workColor }}">{{ workToday }}</span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:{{ workColor }};padding-bottom:3px">{{ workStatus }}</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:5px;height:34px;margin-top:11px">
+            <sc-for list="{{ workBars }}" as="b" hint-placeholder-count="7">
+              <span style="flex:1;display:flex;flex-direction:column;align-items:stretch;gap:4px">
+                <span style="height:{{ b.h }}px;background:{{ b.color }}"></span>
+                <span style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text3);text-align:center">{{ b.d }}</span>
+              </span>
+            </sc-for>
+          </div>
+          <button onClick="{{ toggleWork }}" style="margin-top:12px;width:100%;height:36px;padding:0 13px;text-align:left;background:{{ workBtnBg }};border:1px solid {{ workBtnBorder }};color:{{ workBtnColor }};font-size:12px;font-weight:700;letter-spacing:.14em;display:flex;align-items:center;justify-content:space-between" style-hover="opacity:.88">
+            <span>{{ workBtnLabel }}</span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.7">{{ workBtnKey }}</span>
+          </button>
+        </div>
+
+        <div style="background:var(--panel);border:1px solid var(--line);padding:12px 16px 13px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10.5px;font-weight:700;letter-spacing:.13em;color:var(--text3)">SLEEP</span>
+            <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">TARGET 23:30 → 06:30 ±30</span>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:9px;margin-top:4px">
+            <span style="font-family:var(--mono);font-size:18px;font-weight:500">23:52 → 06:41</span>
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text2)">6:49</span>
+            <span style="font-family:var(--mono);font-size:10.5px;color:var(--missed)">+22 LATE</span>
+          </div>
+          <svg width="266" height="34" viewBox="0 0 266 34" style="margin-top:9px;display:block">
+            <line x1="0" y1="12" x2="266" y2="12" stroke="currentColor" stroke-width="1" stroke-dasharray="2 3" style="color:var(--line2)"></line>
+            <sc-for list="{{ sleepBars }}" as="s" hint-placeholder-count="14">
+              <rect x="{{ s.x }}" y="{{ s.y }}" width="12" height="{{ s.h }}" style="fill:var(--wait)"></rect>
+            </sc-for>
+            <sc-for list="{{ sleepDots }}" as="s" hint-placeholder-count="14">
+              <circle cx="{{ s.cx }}" cy="{{ s.cy }}" r="2" style="fill:{{ s.fill }}"></circle>
+            </sc-for>
+          </svg>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3);margin-top:5px">14 NIGHTS · BARS DURATION · DOTS BEDTIME</div>
+          <div style="display:flex;gap:7px;margin-top:11px">
+            <button style="flex:1;height:31px;background:none;border:1px solid var(--line2);font-size:11px;color:var(--text2);text-align:left;padding:0 9px" style-hover="border-color:var(--accent);color:var(--text)">Going to sleep</button>
+            <button style="flex:1;height:31px;background:none;border:1px solid var(--line2);font-size:11px;color:var(--text2);text-align:left;padding:0 9px" style-hover="border-color:var(--accent);color:var(--text)">Woke up</button>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+
+    <div style="flex:none;height:24px;display:flex;align-items:center;gap:18px;border-top:1px solid var(--line);margin-top:8px">
+      <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3)">~/imhim/data.json</span>
+      <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3)">SAVED {{ savedAgo }}</span>
+      <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3)">412 DAYS RECORDED</span>
+      <span style="flex:1"></span>
+      <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3)">[SPACE] CHECK</span>
+      <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3)">[W] WORK</span>
+      <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3)">[/] JUMP</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:880},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark' | 'light'&quot;}}">
+const ISHA_END = 4*60+20;
+const SUNRISE = 5*60+49;
+const P = [
+  {key:'fajr',name:'Fajr',t:4*60+19,end:SUNRISE},
+  {key:'dhuhr',name:'Dhuhr',t:12*60+21,end:15*60+58},
+  {key:'asr',name:'Asr',t:15*60+58,end:18*60+49},
+  {key:'maghrib',name:'Maghrib',t:18*60+49,end:20*60+14},
+  {key:'isha',name:'Isha',t:20*60+14,end:ISHA_END+1440},
+];
+const LOGGED = {fajr:'', dhuhr:'12:44', asr:'16:20', maghrib:'18:58', isha:'20:31'};
+
+const HABITS = [
+  {key:'sport',name:'Sport / training',dots:'1101101',streak:3,record:21,done:true,logged:'07:12',days:'MON–SAT',month:'110110111011011101101101110110'},
+  {key:'read',name:'Read 20 minutes',dots:'1120111',streak:9,record:34,done:false,grace:true,days:'EVERY DAY',month:'111011121111011111211101111011'},
+  {key:'talk',name:'Talk to someone new / a real conversation with a human',dots:'0010103',streak:0,record:6,done:false,days:'MON–FRI',month:'001010300101030010103001010300'},
+  {key:'project',name:'Work on a project',dots:'1111011',streak:2,record:18,done:true,logged:'09:40',days:'EVERY DAY',month:'111101111110111111011111101111'},
+  {key:'clean',name:'Clean space before sleep',dots:'1111111',streak:12,record:12,done:true,logged:'22:50',days:'EVERY DAY',month:'011111111111111111111111111111'},
+  {key:'jobs',name:'Job applications',dots:'1011001',streak:1,record:9,done:true,logged:'11:05',days:'MON–FRI',month:'101100110110011011001101100110'},
+];
+const AVOIDS = [
+  {key:'nic',name:'No cigarettes / nicotine',dots:'1111111',streak:412,record:412,clean:true,pin:true},
+  {key:'reels',name:'No scrolling reels or short-form video',dots:'1101011',streak:2,record:15,clean:true},
+  {key:'games',name:'No video games',dots:'1111101',streak:2,record:29,clean:true},
+  {key:'wake',name:'No sleeping past my target wake time',dots:'1101103',streak:1,record:11,clean:true},
+];
+const SCORES14 = [58,44,61,52,39,66,71,48,55,62,40,57,63,47];
+const WORKWEEK = [{d:'M',v:2.1},{d:'T',v:0.8},{d:'W',v:1.6},{d:'T',v:0},{d:'F',v:1.7},{d:'S',v:0},{d:'S',v:0}];
+const NIGHTS = [6.9,7.4,6.1,7.8,5.5,7.1,6.4,8.0,6.6,5.9,7.3,6.8,7.6,6.8];
+const BEDTIMES = [15,-8,42,-20,68,5,30,-35,22,55,-12,18,-5,22];
+
+function pad(n){return String(n).padStart(2,'0');}
+function hm(m){m=((m%1440)+1440)%1440;return pad(Math.floor(m/60))+':'+pad(m%60);}
+
+class Component extends DCLogic {
+  state = {
+    now: new Date(), checks: {},
+    habits: Object.fromEntries(HABITS.map(h => [h.key, !!h.done])),
+    grace: {}, avoids: Object.fromEntries(AVOIDS.map(a => [a.key, !!a.clean])),
+    open: null, working: false, workSec: 0,
+  };
+  componentDidMount(){
+    this.iv = setInterval(() => this.setState(s => ({now:new Date(), workSec: s.working ? s.workSec+1 : s.workSec})), 1000);
+  }
+  componentWillUnmount(){ clearInterval(this.iv); }
+
+  box(state){
+    if (state === 'done')  return {boxFill:'var(--done)', boxBorder:'var(--done)', mark:'✓', markColor:'var(--panel)'};
+    if (state === 'grace') return {boxFill:'transparent', boxBorder:'var(--grace)', mark:'G', markColor:'var(--grace)'};
+    if (state === 'missed')return {boxFill:'transparent', boxBorder:'var(--missed)', mark:'', markColor:'var(--missed)'};
+    if (state === 'open')  return {boxFill:'transparent', boxBorder:'var(--accent)', mark:'', markColor:'var(--accent)'};
+    return {boxFill:'transparent', boxBorder:'var(--line2)', mark:'', markColor:'var(--text3)'};
+  }
+  cell(ch){
+    if (ch === '1') return {fill:'var(--done)', border:'var(--done)'};
+    if (ch === '0') return {fill:'transparent', border:'var(--missed)'};
+    if (ch === '2') return {fill:'transparent', border:'var(--grace)'};
+    return {fill:'transparent', border:'var(--line2)'};
+  }
+  dots(str){ return str.split('').map(c => this.cell(c)); }
+
+  renderVals(){
+    const now = this.state.now;
+    const mins = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+
+    const ps = {};
+    P.forEach(p => {
+      const open = mins >= p.t && mins < p.end;
+      const closed = mins >= p.end;
+      const ck = this.state.checks[p.key];
+      ps[p.key] = (ck === undefined ? (closed && p.key !== 'fajr') : ck) ? 'done' : closed ? 'missed' : open ? 'open' : 'wait';
+    });
+
+    let hero = null;
+    for (let i = 0; i < P.length; i++){
+      if (ps[P[i].key] === 'open'){ hero = {p:P[i], left:P[i].end - mins, mode:'window', end:P[i].end}; break; }
+    }
+    if (!hero){
+      const nxt = P.find(p => p.t > mins) || P[0];
+      hero = {p:nxt, left: nxt.t > mins ? nxt.t - mins : nxt.t + 1440 - mins, mode:'next', end:nxt.end};
+    }
+    const total = Math.max(0, Math.floor(hero.left*60));
+    const hh = Math.floor(total/3600), mm = Math.floor((total%3600)/60), ss = total%60;
+    const heroCount = hh > 0 ? hh + ':' + pad(mm) + ':' + pad(ss) : pad(mm) + ':' + pad(ss);
+    const urgent = hero.mode === 'window' && hero.left < 20;
+    const after = P[(P.indexOf(hero.p)+1) % P.length];
+    const span = hero.p.end - hero.p.t;
+    const heroPct = hero.mode === 'window' ? Math.min(100, ((mins - hero.p.t)/span)*100) : 0;
+
+    // ticks are positioned by time and carry no text; the labels live in an evenly
+    // divided row below, so two close prayers can never overlap
+    const ticks = P.map(p => ({left:(p.t/1440)*100, color:'var(--line2)'}))
+      .concat([{left:(SUNRISE/1440)*100, color:'var(--line2)'}]);
+    const railCells = P.map(p => ({
+      label: p.name.toUpperCase(),
+      time: hm(p.t) + ' → ' + hm(p.end),
+      labelColor: p.key === hero.p.key ? 'var(--accent)' : ps[p.key] === 'done' ? 'var(--done)' : ps[p.key] === 'missed' ? 'var(--missed)' : 'var(--text2)',
+      timeColor: p.key === hero.p.key ? 'var(--text)' : 'var(--text3)',
+    }));
+    const bands = P.map(p => ({
+      left: (p.t/1440)*100,
+      width: ((Math.min(p.end, 1440) - p.t)/1440)*100,
+      color: ps[p.key] === 'done' ? 'var(--done)' : ps[p.key] === 'missed' ? 'var(--missed)' : ps[p.key] === 'open' ? 'var(--accent)' : 'var(--wait)',
+    }));
+    const legend = [
+      {label:'DONE', fill:'var(--done)', border:'var(--done)'},
+      {label:'MISSED', fill:'transparent', border:'var(--missed)'},
+      {label:'GRACE DAY', fill:'transparent', border:'var(--grace)'},
+      {label:'UNTRACKED', fill:'transparent', border:'var(--line2)'},
+    ];
+
+    const mkNav = (arr) => arr.map(x => ({
+      label:x[0], meta:x[1], on:x[0] === 'Today',
+      bg: x[0] === 'Today' ? 'var(--panel2)' : 'transparent',
+      bar: x[0] === 'Today' ? 'var(--accent)' : 'transparent',
+      color: x[0] === 'Today' ? 'var(--text)' : 'var(--text2)',
+      weight: x[0] === 'Today' ? 600 : 400,
+      metaColor: x[0] === 'Today' ? 'var(--accent)' : 'var(--text3)',
+    }));
+
+    const prayers = P.map(p => {
+      const st = ps[p.key];
+      const elapsed = st === 'wait' ? 0 : st === 'done' || st === 'missed' ? 100 : Math.min(100, ((mins - p.t)/(p.end - p.t))*100);
+      return Object.assign({}, this.box(st), {
+        name: p.name, time: hm(p.t),
+        logged: st === 'done' ? (LOGGED[p.key] || hm(p.t + 12)) : '—',
+        barPct: elapsed,
+        barColor: st === 'done' ? 'var(--done)' : st === 'missed' ? 'var(--missed)' : st === 'open' ? 'var(--accent)' : 'var(--wait)',
+        rowBg: st === 'open' ? 'var(--panel2)' : 'transparent',
+        state: st === 'done' ? 'DONE' : st === 'missed' ? 'MISSED' : st === 'open' ? 'OPEN NOW' : p.key === hero.p.key ? 'NEXT' : 'UPCOMING',
+        stateColor: st === 'done' ? 'var(--done)' : st === 'missed' ? 'var(--missed)' : (st === 'open' || p.key === hero.p.key) ? 'var(--accent)' : 'var(--text3)',
+        nameColor: st === 'missed' ? 'var(--text2)' : 'var(--text)',
+        weight: (st === 'open' || p.key === hero.p.key) ? 600 : 400,
+        toggle: () => this.setState(s => {
+          const cur = s.checks[p.key] === undefined ? (st === 'done') : s.checks[p.key];
+          return {checks: Object.assign({}, s.checks, {[p.key]: !cur})};
+        }),
+      });
+    });
+
+    // a grace day is only spent while the habit is still unchecked; completing it releases it
+    const graceUsed = Object.keys(this.state.grace)
+      .filter(k => this.state.grace[k] && !this.state.habits[k]).length;
+
+    const habits = HABITS.map(h => {
+      const on = this.state.habits[h.key];
+      const used = !!this.state.grace[h.key] && !on;
+      const st = on ? 'done' : used ? 'grace' : 'wait';
+      const canGrace = h.grace && !on && graceUsed < 1;
+      return Object.assign({}, this.box(st), {
+        name: h.name,
+        dots: this.dots(used ? h.dots.slice(0,6) + '2' : h.dots),
+        month: this.dots(h.month),
+        logged: on ? (h.logged || '—') : used ? 'GRACE' : '—',
+        graceLabel: used ? 'GRACE DAY' : 'USE GRACE',
+        graceVis: (!on && (used || canGrace)) ? 'visible' : 'hidden',
+        graceColor: used ? 'var(--grace)' : 'var(--text3)',
+        graceBorder: used ? 'var(--grace)' : 'var(--line2)',
+        streak: String(h.streak),
+        record: ' / ' + h.record,
+        nameColor: on ? 'var(--text)' : used ? 'var(--grace)' : 'var(--text2)',
+        open: this.state.open === h.key,
+        detail: [
+          {k:'STREAK', v:h.streak + ' days', color:'var(--text)'},
+          {k:'RECORD', v:h.record + ' days', color:'var(--text2)'},
+          {k:'THIS MONTH', v:h.month.split('').filter(c => c === '1').length + ' / 30', color:'var(--text2)'},
+          {k:'APPLIES', v:h.days, color:'var(--text2)'},
+          {k:'GRACE', v:used ? 'used 1 / 1' : (h.grace ? '0 / 1 available' : '0 / 1'), color: used ? 'var(--grace)' : 'var(--text2)'},
+        ],
+        toggle: () => this.setState(s => ({
+          habits: Object.assign({}, s.habits, {[h.key]: !s.habits[h.key]}),
+          grace: Object.assign({}, s.grace, {[h.key]: false}),
+        })),
+        expand: () => this.setState(s => ({open: s.open === h.key ? null : h.key})),
+        useGrace: () => this.setState(s => ({grace: Object.assign({}, s.grace, {[h.key]: !s.grace[h.key]})})),
+      });
+    });
+
+    const avoids = AVOIDS.map(a => {
+      const on = this.state.avoids[a.key];
+      return Object.assign({}, this.box(on ? 'done' : 'wait'), {
+        name: a.name, dots: this.dots(a.dots), pin: a.pin ? 'PIN' : '',
+        streak: String(a.streak), record: ' / ' + a.record,
+        nameColor: on ? 'var(--text)' : 'var(--text2)',
+        toggle: () => this.setState(s => ({avoids: Object.assign({}, s.avoids, {[a.key]: !s.avoids[a.key]})})),
+        slip: () => this.setState(s => ({avoids: Object.assign({}, s.avoids, {[a.key]: false})})),
+      });
+    });
+
+    const pDone = P.filter(p => ps[p.key] === 'done').length * 5;
+    const score = [
+      {label:'PRAYERS', value:pDone + '/25', pct:pDone*4, color:'var(--accent)'},
+      {label:'HABITS', value:'17/25', pct:68, color:'var(--accent)'},
+      {label:'AVOID', value:'20/20', pct:100, color:'var(--done)'},
+      {label:'SLEEP', value:'0/15', pct:0, color:'var(--accent)'},
+      {label:'WORK', value:'0/15', pct:0, color:'var(--accent)'},
+    ];
+
+    const sparkPoints = SCORES14.map((v,i) => (i*(132/13)).toFixed(1) + ',' + (24 - (v/100)*22).toFixed(1)).join(' ');
+    const workMax = Math.max.apply(null, WORKWEEK.map(w => w.v));
+    const workBars = WORKWEEK.map((w,i) => ({
+      d:w.d, h: Math.max(1, Math.round((w.v/workMax)*24)),
+      color: i === 5 || i === 6 ? 'var(--wait)' : w.v > 0 ? 'var(--text2)' : 'var(--wait)',
+    }));
+    const nMax = Math.max.apply(null, NIGHTS);
+    const sleepBars = NIGHTS.map((v,i) => {
+      const h = Math.round((v/nMax)*20);
+      return {x: i*19, y: 34 - h, h};
+    });
+    const sleepDots = BEDTIMES.map((b,i) => ({
+      cx: i*19 + 6, cy: Math.max(2, Math.min(22, 12 + b/6)),
+      fill: Math.abs(b) <= 30 ? 'var(--done)' : 'var(--missed)',
+    }));
+
+    const doneCount = P.filter(p => ps[p.key] === 'done').length
+      + HABITS.filter(h => this.state.habits[h.key]).length
+      + AVOIDS.filter(a => this.state.avoids[a.key]).length;
+
+    const D = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    const w = this.state.workSec;
+
+    return {
+      theme: this.props.theme || 'dark',
+      navA: mkNav([['Today','']]),
+      navB: mkNav([['Calendar','AUG'],['Week','W35'],['Work','6:12'],['Sleep','6:49'],['Stats','90D'],['Review','SUN']]),
+      navC: mkNav([['Lists','6 · 4'],['Settings','']]),
+      ticks, railCells, bands, legend, prayers, habits, avoids, score,
+      total: String(pDone + 37),
+      strip: [
+        {label:'PRAYERS', value: P.filter(p => ps[p.key]==='done').length + '/5', color:'var(--text)'},
+        {label:'HABITS', value: HABITS.filter(h => this.state.habits[h.key]).length + '/6', color:'var(--text)'},
+        {label:'CLEAN', value: AVOIDS.filter(a => this.state.avoids[a.key]).length + '/4', color:'var(--done)'},
+        {label:'SMOKE-FREE', value:'412 D', color:'var(--accent)'},
+      ],
+      graceLeft: String(graceUsed),
+      dayPct: (mins/1440)*100,
+      elapsedLabel: 'SUNRISE ' + hm(SUNRISE) + ' · ELAPSED ' + Math.floor(mins/60) + 'H ' + pad(Math.floor(mins%60)) + 'M',
+      clock: pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
+      dateLabel: D[now.getDay()] + ' ' + pad(now.getDate()) + ' ' + M[now.getMonth()] + ' ' + now.getFullYear(),
+      heroKicker: urgent ? 'WINDOW CLOSING' : hero.mode === 'window' ? 'OPEN WINDOW' : 'NEXT PRAYER',
+      heroKickerColor: urgent ? 'var(--missed)' : 'var(--text3)',
+      heroRule: urgent ? 'var(--missed)' : 'var(--accent)',
+      heroName: hero.p.name, heroCount,
+      heroColor: urgent ? 'var(--missed)' : 'var(--accent)',
+      heroPct, heroPctLabel: hero.mode === 'window' ? Math.round(heroPct) + '% OF WINDOW ELAPSED' : 'NOT OPEN YET',
+      heroSub: hero.mode === 'window'
+        ? 'LEFT IN WINDOW · CLOSES ' + hm(hero.end) + ' · THEN ' + after.name.toUpperCase() + ' ' + hm(after.t)
+        : 'UNTIL ' + hero.p.name.toUpperCase() + ' ' + hm(hero.p.t) + ' · WINDOW CLOSES ' + hm(hero.p.end) + ' · THEN ' + after.name.toUpperCase() + ' ' + hm(after.t),
+      doneLabel: doneCount + ' of 15 checked',
+      checkedPct: (doneCount/15)*100,
+      sparkPoints, sparkLastX:132, sparkLastY:(24 - (SCORES14[13]/100)*22).toFixed(1),
+      workBars, sleepBars, sleepDots,
+      workToday: Math.floor(w/3600) + ':' + pad(Math.floor((w%3600)/60)) + ':' + pad(w%60),
+      workColor: this.state.working ? 'var(--accent)' : 'var(--text)',
+      workStatus: this.state.working ? 'RUNNING' : 'STOPPED',
+      workBtnLabel: this.state.working ? 'STOP' : 'START WORK',
+      workBtnKey: this.state.working ? 'ESC' : 'W',
+      workBtnBg: this.state.working ? 'transparent' : 'var(--accent)',
+      workBtnBorder: this.state.working ? 'var(--line2)' : 'var(--accent)',
+      workBtnColor: this.state.working ? 'var(--text)' : 'var(--accent-ink)',
+      toggleWork: () => this.setState(s => ({working: !s.working})),
+      savedAgo: pad(now.getSeconds() % 60) + 'S AGO',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="tokens.css">
+</helmet>
+<div data-app data-theme="{{ theme }}" style="width:1400px;height:880px;display:flex;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;border:1px solid var(--line2)">
+
+  <nav style="width:188px;flex:none;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid var(--line)">
+      <div style="font-size:14px;font-weight:700;letter-spacing:.2em">I'M HIM</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.06em;margin-top:5px">LOCAL · OFFLINE</div>
+    </div>
+    <div style="display:flex;flex-direction:column;padding:8px 0;gap:1px">
+      <div style="padding:8px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">NOW</div>
+      <sc-for list="{{ navA }}" as="n" hint-placeholder-count="1">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">HISTORY</div>
+      <sc-for list="{{ navB }}" as="n" hint-placeholder-count="6">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">SETUP</div>
+      <sc-for list="{{ navC }}" as="n" hint-placeholder-count="2">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:14px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:1px">
+      <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">{{ dateLabel }}</div>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:500">{{ clock }}</div>
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text3);margin-top:3px">TUNIS · UTC+1</div>
+    </div>
+  </nav>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:16px 18px 0">
+
+    <div style="display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel);height:44px;flex:none">
+      <div style="display:flex;align-items:center;padding:0 16px;border-right:1px solid var(--line)">
+        <span style="font-size:16px;font-weight:600;letter-spacing:.02em">WORK</span>
+      </div>
+      <sc-for list="{{ strip }}" as="s" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;justify-content:center;gap:2px;padding:0 18px;border-right:1px solid var(--line)">
+          <span style="font-family:var(--mono);font-size:10px;letter-spacing:.13em;color:var(--text3)">{{ s.label }}</span>
+          <span style="font-family:var(--mono);font-size:13px;font-weight:500;color:{{ s.color }}">{{ s.value }}</span>
+        </div>
+      </sc-for>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;padding:0 16px;border-left:1px solid var(--line)">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;color:{{ statusColor }}">{{ status }}</span>
+      </div>
+    </div>
+
+    <section style="margin-top:10px;flex:none;height:198px;display:flex;border:1px solid var(--line);border-top:2px solid {{ heroRule }};background:var(--panel)">
+      <div style="flex:1;min-width:0;padding:18px 24px;display:flex;flex-direction:column">
+        <span style="font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.16em;color:{{ statusColor }}">{{ timerKicker }}</span>
+        <span style="font-family:var(--mono);font-size:82px;font-weight:500;line-height:1;letter-spacing:-.04em;margin-top:8px;color:{{ timerColor }}">{{ elapsed }}</span>
+        <span style="font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--text2);margin-top:12px">{{ timerSub }}</span>
+      </div>
+      <div style="flex:none;width:436px;padding:18px 24px;border-left:1px solid var(--line);display:flex;flex-direction:column">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--text3)">SESSION NAME</span>
+        <div style="position:relative;margin-top:8px">
+          <input value="{{ project }}" onChange="{{ setProject }}" onFocus="{{ openSug }}" placeholder="Project name" style="width:100%;height:38px;border:1px solid var(--line2);padding:0 12px;font-family:var(--mono);font-size:13.5px;color:var(--text)">
+          <sc-if value="{{ showSug }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;left:0;right:0;top:39px;z-index:5;background:var(--panel2);border:1px solid var(--line2);display:flex;flex-direction:column">
+              <sc-for list="{{ suggestions }}" as="s" hint-placeholder-count="3">
+                <button onClick="{{ s.pick }}" style="display:flex;align-items:center;gap:10px;height:31px;padding:0 12px;background:none;border:0;border-bottom:1px solid var(--line);text-align:left;font-family:var(--mono);font-size:12px;color:var(--text2)" style-hover="background:var(--panel);color:var(--text)">
+                  <span style="flex:1">{{ s.name }}</span>
+                  <span style="color:var(--text3)">{{ s.total }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--text3);margin-top:7px">{{ sugHint }}</span>
+        <div style="flex:1"></div>
+        <sc-if value="{{ running }}" hint-placeholder-val="{{ false }}">
+          <input value="{{ stopNote }}" onChange="{{ setStopNote }}" placeholder="+ note on stop (optional)" style="width:100%;height:32px;border:1px solid var(--line);padding:0 12px;font-family:var(--mono);font-size:12px;color:var(--text2);margin-bottom:9px">
+        </sc-if>
+        <button onClick="{{ toggle }}" style="width:100%;height:46px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;background:{{ btnBg }};border:1px solid {{ btnBorder }};color:{{ btnColor }};font-size:14px;font-weight:700;letter-spacing:.16em" style-hover="opacity:.88">
+          <span>{{ btnLabel }}</span>
+          <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.72">{{ btnKey }}</span>
+        </button>
+      </div>
+    </section>
+
+    <div style="flex:1;min-height:0;display:flex;gap:10px;margin-top:10px">
+
+      <section style="flex:none;width:560px;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+        <header style="display:flex;align-items:baseline;gap:14px;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+          <span style="font-size:11px;font-weight:700;letter-spacing:.16em">TODAY'S SESSIONS</span>
+          <span style="flex:1"></span>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ sessionSummary }}</span>
+        </header>
+        <div style="flex:1;min-height:0;overflow:auto">
+          <sc-for list="{{ sessions }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;border-bottom:1px solid var(--line)" style-hover="background:var(--panel2)">
+              <div style="display:flex;align-items:center;gap:12px;height:38px;padding:0 16px">
+                <span style="font-family:var(--mono);font-size:11.5px;color:var(--text3);width:96px">{{ s.span }}</span>
+                <sc-if value="{{ s.editing }}" hint-placeholder-val="{{ false }}">
+                  <input value="{{ s.name }}" onChange="{{ s.rename }}" style="flex:1;min-width:0;height:26px;border:1px solid var(--accent);padding:0 8px;font-family:var(--mono);font-size:12.5px;color:var(--text)">
+                </sc-if>
+                <sc-if value="{{ s.notEditing }}" hint-placeholder-val="{{ true }}">
+                  <span style="flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</span>
+                </sc-if>
+                <span style="font-family:var(--mono);font-size:14px;font-weight:500;width:58px;text-align:right">{{ s.dur }}</span>
+                <button onClick="{{ s.edit }}" style="flex:none;height:22px;padding:0 8px;background:none;border:1px solid var(--line2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3)" style-hover="border-color:var(--accent);color:var(--text)">{{ s.editLabel }}</button>
+                <button onClick="{{ s.remove }}" style="flex:none;height:22px;padding:0 8px;background:none;border:1px solid var(--line2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--text3)" style-hover="border-color:var(--missed);color:var(--missed)">DELETE</button>
+              </div>
+              <sc-if value="{{ s.hasNote }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:0 16px 11px 112px;font-family:var(--mono);font-size:11px;color:var(--text2)">{{ s.note }}</div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noSessions }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:22px 16px;display:flex;flex-direction:column;gap:7px">
+              <span style="font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--text2)">NOTHING LOGGED TODAY YET.</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">Name a session and press START WORK. It will appear here.</span>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <section style="flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">TOTALS</span>
+            <span style="flex:1"></span>
+            <button onClick="{{ setWeekly }}" style="height:23px;padding:0 10px;background:{{ weeklyBg }};border:1px solid {{ weeklyBorder }};font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:{{ weeklyColor }}">PER WEEK</button>
+            <button onClick="{{ setMonthly }}" style="height:23px;padding:0 10px;background:{{ monthlyBg }};border:1px solid {{ monthlyBorder }};font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:{{ monthlyColor }}">PER MONTH</button>
+          </header>
+          <div style="flex:1;min-height:0;display:flex;align-items:flex-end;gap:7px;padding:16px 16px 0">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="12">
+              <span style="flex:1;display:flex;flex-direction:column;gap:6px;height:100%">
+                <span style="flex:none;font-family:var(--mono);font-size:10px;color:var(--text3);text-align:center">{{ b.value }}</span>
+                <span style="flex:1;min-height:0;display:flex;align-items:flex-end">
+                  <span style="flex:none;width:100%;height:{{ b.h }}%;background:{{ b.color }}"></span>
+                </span>
+              </span>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:7px;padding:7px 16px 12px">
+            <sc-for list="{{ bars }}" as="b" hint-placeholder-count="12">
+              <span style="flex:1;font-family:var(--mono);font-size:10px;letter-spacing:.04em;color:{{ b.labelColor }};text-align:center">{{ b.label }}</span>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="flex:none;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:baseline;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">HOURS PER PROJECT</span>
+            <span style="flex:1"></span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">LAST 90 DAYS</span>
+          </header>
+          <sc-for list="{{ projects }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;height:32px;padding:0 16px;border-bottom:1px solid var(--line)">
+              <span style="width:24px;font-family:var(--mono);font-size:11px;color:var(--text3)">{{ p.rank }}</span>
+              <span style="flex:none;width:150px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:{{ p.nameColor }}">{{ p.name }}</span>
+              <span style="flex:1;height:6px;background:var(--wait);position:relative">
+                <span style="position:absolute;left:0;top:0;height:6px;background:{{ p.color }};width:{{ p.pct }}%"></span>
+              </span>
+              <span style="font-family:var(--mono);font-size:12.5px;width:58px;text-align:right">{{ p.hours }}</span>
+              <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3);width:40px;text-align:right">{{ p.share }}</span>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+    </div>
+
+    <div style="flex:none;height:24px;display:flex;align-items:center;gap:18px;border-top:1px solid var(--line);margin-top:8px">
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">~/imhim/data.json</span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">{{ lifetime }}</span>
+      <span style="flex:1"></span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">[W] START / STOP</span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">[E] EDIT LAST</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:880},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark' | 'light'&quot;}}">
+const M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const D = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const TODAY = new Date(2026, 7, 31);
+// a genuine 90-day slice: sums to 91h, which is the last three monthly bars (30+35+26)
+const HISTORY = [
+  {name:"I'm HIM app", mins:2900},
+  {name:'Job applications', mins:1180},
+  {name:'Arabic reading', mins:760},
+  {name:'Portfolio site', mins:400},
+  {name:'Course — algorithms', mins:220},
+];
+const WEEKLY = [7.2, 5.4, 9.1, 6.6, 4.2, 8.8, 7.9, 3.1, 6.0, 8.2, 5.5, 6.2];
+const MONTHLY = [18, 26, 31, 22, 29, 37, 24, 33, 28, 35, 30, 26];
+
+function pad(n){return String(n).padStart(2,'0');}
+function hm(m){m=((m%1440)+1440)%1440;return pad(Math.floor(m/60))+':'+pad(m%60);}
+function hhmm(m){return Math.floor(m/60)+':'+pad(m%60);}
+function isoWeek(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  return Math.ceil((((d - new Date(d.getFullYear(),0,1))/86400000) + 1)/7);
+}
+const CURRENT_WEEK = isoWeek(TODAY);
+
+class Component extends DCLogic {
+  state = {
+    now:new Date(), running:false, sec:0, startedAt:null,
+    project:'', showSug:false, stopNote:'',
+    sessions:[], editing:null, range:'week',
+  };
+  componentDidMount(){
+    this.iv = setInterval(() => this.setState(s => ({now:new Date(), sec: s.running ? s.sec + 1 : s.sec})), 1000);
+  }
+  componentWillUnmount(){ clearInterval(this.iv); }
+
+  start(){
+    const n = new Date();
+    this.setState({running:true, sec:0, showSug:false, startedAt: n.getHours()*60 + n.getMinutes()});
+  }
+  stop(){
+    const s = this.state;
+    const mins = Math.max(1, Math.round(s.sec/60));
+    const entry = {
+      id: Date.now(),
+      name: s.project.trim() || 'Unnamed session',
+      from: s.startedAt, to: (s.startedAt + mins) % 1440,
+      mins, note: s.stopNote.trim(),
+    };
+    this.setState({running:false, sec:0, stopNote:'', sessions:[entry].concat(s.sessions)});
+  }
+
+  renderVals(){
+    const now = this.state.now;
+    const running = this.state.running;
+    const secs = this.state.sec;
+    const loggedMins = this.state.sessions.reduce((a,b) => a + b.mins, 0);
+    const todayMins = loggedMins + (running ? Math.floor(secs/60) : 0);
+
+    const q = this.state.project.trim().toLowerCase();
+    const matches = HISTORY.filter(h => q === '' || h.name.toLowerCase().indexOf(q) !== -1).slice(0,4);
+
+    const sessions = this.state.sessions.map(s => ({
+      span: hm(s.from) + ' → ' + hm(s.to),
+      name: s.name, dur: hhmm(s.mins),
+      hasNote: !!s.note, note: s.note,
+      editing: this.state.editing === s.id,
+      notEditing: this.state.editing !== s.id,
+      editLabel: this.state.editing === s.id ? 'DONE' : 'EDIT',
+      edit: () => this.setState(st => ({editing: st.editing === s.id ? null : s.id})),
+      rename: (e) => {
+        const v = e.target.value;
+        this.setState(st => ({sessions: st.sessions.map(x => x.id === s.id ? Object.assign({}, x, {name:v}) : x)}));
+      },
+      remove: () => this.setState(st => ({sessions: st.sessions.filter(x => x.id !== s.id), editing:null})),
+    }));
+
+    const weekly = this.state.range === 'week';
+    const data = weekly ? WEEKLY : MONTHLY;
+    const max = Math.max.apply(null, data);
+    const bars = data.map((v,i) => ({
+      h: (v/max)*100,
+      value: weekly ? v.toFixed(1) : String(v),
+      label: weekly ? 'W' + (CURRENT_WEEK - 11 + i) : M[(now.getMonth() - 11 + i + 24) % 12],
+      color: i === data.length-1 ? 'var(--accent)' : 'var(--text2)',
+      labelColor: i === data.length-1 ? 'var(--accent)' : 'var(--text3)',
+    }));
+
+    const totalHist = HISTORY.reduce((a,b) => a + b.mins, 0);
+    const projects = HISTORY.map((h,i) => ({
+      rank: pad(i+1), name: h.name,
+      pct: (h.mins/HISTORY[0].mins)*100,
+      hours: hhmm(h.mins),
+      share: Math.round((h.mins/totalHist)*100) + '%',
+      color: i === 0 ? 'var(--accent)' : 'var(--text2)',
+      nameColor: i === 0 ? 'var(--text)' : 'var(--text2)',
+    }));
+
+    const mkNav = (arr, active) => arr.map(x => ({
+      label:x[0], meta:x[1],
+      bg: x[0] === active ? 'var(--panel2)' : 'transparent',
+      bar: x[0] === active ? 'var(--accent)' : 'transparent',
+      color: x[0] === active ? 'var(--text)' : 'var(--text2)',
+      weight: x[0] === active ? 600 : 400,
+      metaColor: x[0] === active ? 'var(--accent)' : 'var(--text3)',
+    }));
+
+    const hh = Math.floor(secs/3600), mm = Math.floor((secs%3600)/60), ss = secs%60;
+
+    return {
+      theme: this.props.theme || 'dark',
+      navA: mkNav([['Today','42']], ''),
+      navB: mkNav([['Calendar','AUG'],['Week','W' + CURRENT_WEEK],['Work', hhmm(todayMins)],['Sleep','6:49'],['Stats','90D'],['Review','SUN']], 'Work'),
+      navC: mkNav([['Lists','6 · 4'],['Settings','']], ''),
+      strip: [
+        {label:'TODAY', value: hhmm(todayMins), color: todayMins ? 'var(--text)' : 'var(--text3)'},
+        {label:'THIS WEEK', value:'6:12', color:'var(--text)'},
+        {label:'THIS MONTH', value:'26:04', color:'var(--text)'},
+        {label:'AVG / DAY · MONTH', value:'0:50', color:'var(--text2)'},
+      ],
+      status: running ? 'TIMER RUNNING' : 'TIMER STOPPED',
+      statusColor: running ? 'var(--accent)' : 'var(--text3)',
+      heroRule: running ? 'var(--accent)' : 'var(--line2)',
+      timerKicker: running ? 'RUNNING' : 'READY',
+      timerColor: running ? 'var(--accent)' : 'var(--text3)',
+      elapsed: hh + ':' + pad(mm) + ':' + pad(ss),
+      timerSub: running
+        ? 'STARTED ' + hm(this.state.startedAt) + ' · ' + (this.state.project.trim() || 'UNNAMED SESSION').toUpperCase()
+        : 'NAME THE SESSION, THEN START. TODAY ' + hhmm(todayMins) + ' LOGGED.',
+      project: this.state.project,
+      setProject: (e) => { const v = e.target.value; this.setState({project:v, showSug:true}); },
+      openSug: () => this.setState({showSug:true}),
+      showSug: this.state.showSug && !running && matches.length > 0,
+      suggestions: matches.map(h => ({
+        name: h.name, total: hhmm(h.mins),
+        pick: () => this.setState({project: h.name, showSug:false}),
+      })),
+      sugHint: running ? 'RENAME AFTER STOPPING' : 'AUTOCOMPLETE FROM ' + HISTORY.length + ' PREVIOUS PROJECTS',
+      running,
+      stopNote: this.state.stopNote,
+      setStopNote: (e) => { const v = e.target.value; this.setState({stopNote:v}); },
+      btnLabel: running ? 'STOP' : 'START WORK',
+      btnKey: running ? 'ESC' : 'W',
+      btnBg: running ? 'transparent' : 'var(--accent)',
+      btnBorder: running ? 'var(--line2)' : 'var(--accent)',
+      btnColor: running ? 'var(--text)' : 'var(--accent-ink)',
+      toggle: () => running ? this.stop() : this.start(),
+      sessions,
+      noSessions: sessions.length === 0,
+      sessionSummary: sessions.length === 0 ? '0 SESSIONS' : sessions.length + (sessions.length === 1 ? ' SESSION · ' : ' SESSIONS · ') + hhmm(loggedMins),
+      bars, projects,
+      weeklyBg: weekly ? 'var(--accent)' : 'transparent',
+      weeklyBorder: weekly ? 'var(--accent)' : 'var(--line2)',
+      weeklyColor: weekly ? 'var(--accent-ink)' : 'var(--text3)',
+      monthlyBg: weekly ? 'transparent' : 'var(--accent)',
+      monthlyBorder: weekly ? 'var(--line2)' : 'var(--accent)',
+      monthlyColor: weekly ? 'var(--text3)' : 'var(--accent-ink)',
+      setWeekly: () => this.setState({range:'week'}),
+      setMonthly: () => this.setState({range:'month'}),
+      lifetime: 'LAST 12 MONTHS ' + MONTHLY.reduce((a,b) => a + b, 0) + ' HOURS · ' + HISTORY.length + ' PROJECTS',
+      clock: pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
+      dateLabel: D[now.getDay()] + ' ' + pad(now.getDate()) + ' ' + M[now.getMonth()] + ' ' + now.getFullYear(),
+    };
+  }
+}
+</script>
+</body>
+</html>

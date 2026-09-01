@@ -1,0 +1,69 @@
+# Builds the web client and publishes it to GitHub Pages.
+#
+# The sync server is not deployed from here: it is a Cloudflare Worker, and
+# Pages serves static files only. A build without VITE_SYNC_SERVER still works
+# — it is the signed-out app, local to whichever browser opens it.
+name: Deploy web client
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'vite.web.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web.yml'
+  workflow_dispatch:
+
+# Pages needs these; the token is minted for the deploy step.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; the newer one wins.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # --ignore-scripts skips the Electron postinstall, which rebuilds
+      # better-sqlite3 against Electron ABI. The web client uses sql.js and
+      # never loads the native module, so that work is pure cost here.
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Build
+        env:
+          # Set this as a repository variable once the Worker is deployed:
+          # Settings -> Secrets and variables -> Actions -> Variables.
+          # Without it the app points at localhost and cannot sign in.
+          VITE_SYNC_SERVER: ${{ vars.SYNC_SERVER }}
+        run: npm run build:web
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

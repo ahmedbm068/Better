@@ -1,0 +1,235 @@
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4 finds its classes by scanning outward from the project root, and
+ * the web build roots at src/web rather than at the repository. Naming the
+ * renderer explicitly makes both builds produce the same stylesheet.
+ */
+@source '../../renderer/src';
+@source '../../web';
+
+/*
+ * The single token sheet, adopted from the design handoff.
+ *
+ * Two themes on one contract: `:root` is dark (the default), `[data-theme='light']`
+ * overrides it. Light is not a lightened dark — the accent darkens and the three
+ * semantics darken so they clear 4.5:1 on white at 10px.
+ *
+ * No component should contain a hex value. Nothing is fetched over the network.
+ */
+
+:root {
+  --bg: #121110;
+  --panel: #191817;
+  --panel2: #201e1c;
+  --line: #2a2825;
+  --line2: #3b3833;
+  --text: #eeebe6;
+  --text2: #a49d95;
+  --text3: #837c74;
+  --accent: #e8a33d;
+  --accent-ink: #17130d;
+  --done: #7dae77;
+  --missed: #c06a5e;
+  --grace: #7f97b5;
+  --wait: #3b3833;
+  --scrim: rgb(0 0 0 / 0.62);
+}
+
+[data-theme='light'] {
+  --bg: #f2f1ef;
+  --panel: #ffffff;
+  --panel2: #f7f6f4;
+  --line: #e2dfda;
+  --line2: #cbc7c0;
+  --text: #1a1917;
+  --text2: #5c5750;
+  --text3: #6f6a63;
+  --accent: #a8680b;
+  --accent-ink: #ffffff;
+  --done: #3f6a3a;
+  --missed: #98453b;
+  --grace: #42597a;
+  --wait: #d8d4ce;
+  /* A light ground needs a far lighter scrim, or the page turns muddy. */
+  --scrim: rgb(28 32 38 / 0.28);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-panel: var(--panel);
+  --color-panel-2: var(--panel2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line2);
+  --color-fg: var(--text);
+  --color-dim: var(--text2);
+  --color-faint: var(--text3);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-done: var(--done);
+  --color-missed: var(--missed);
+  --color-grace: var(--grace);
+  --color-wait: var(--wait);
+  --color-scrim: var(--scrim);
+
+  /* The one permitted tint, per the handoff: accent mixed into the panel. */
+  --color-accent-soft: color-mix(in oklab, var(--accent) 14%, var(--panel));
+  --color-missed-soft: color-mix(in oklab, var(--missed) 14%, var(--panel));
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, 'SF Mono', monospace;
+
+  /* Radius is 0 everywhere. `rounded-full` is a literal and still works, which
+     is what the dot strips and meters need. */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+/* Every number, time, duration, countdown and score is mono and tabular, so
+   columns of figures align and a ticking clock never reflows. */
+* {
+  font-variant-numeric: tabular-nums;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Panel header: 11px / 700 / 0.16em uppercase. */
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+/* Section kicker inside a panel: smaller and tighter than a panel header. */
+.kicker {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+/* Micro label: mono, uppercase, for units and meta. Never below 10px. */
+.micro {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.quiet {
+  color: var(--text3);
+  font-size: 12px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--line2);
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+  border-radius: 0;
+}
+
+input[type='text'],
+input[type='number'],
+input[type='time'],
+input[type='date'],
+textarea,
+select {
+  background: var(--bg);
+  border: 1px solid var(--line2);
+  padding: 7px 10px;
+  outline: none;
+  width: 100%;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text3);
+}
+
+/* Focus rings are themed — never the browser default. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+/* Date/time pickers ship a light glyph; invert it so it reads on dark panels. */
+:root:not([data-theme='light']) input[type='time']::-webkit-calendar-picker-indicator,
+:root:not([data-theme='light']) input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.75);
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.pulse {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    animation: none;
+  }
+}

@@ -1,0 +1,52 @@
+# Typecheck and tests on every push.
+#
+# Split into two jobs because they need very different things. The first needs
+# only Node. The second needs Electron, a built native module and a display,
+# which is slow enough to be worth keeping off the fast path.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Typecheck and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # No Electron needed: the unit tests are pure logic, and the web database
+      # test runs on sql.js, which is WebAssembly.
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npx vitest run
+
+  integration:
+    name: Database, sync and server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The full install here: these checks run under Electron, against
+      # better-sqlite3 built for its ABI.
+      - run: npm ci
+
+      # Electron needs a display even with no window on screen.
+      - name: Run checks
+        run: |
+          xvfb-run --auto-servernum npm run smoke
+          xvfb-run --auto-servernum npm run migration-check
+          xvfb-run --auto-servernum npm run sync-check
+          xvfb-run --auto-servernum npm run server-check
+          xvfb-run --auto-servernum npm run syncservice-check

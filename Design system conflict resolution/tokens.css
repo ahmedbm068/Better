@@ -1,0 +1,21 @@
+/* I'm HIM — the single token sheet. Every screen links this; nothing redefines it. */
+[data-app]{
+  --bg:#121110;--panel:#191817;--panel2:#201e1c;--line:#2a2825;--line2:#3b3833;
+  --text:#eeebe6;--text2:#a49d95;--text3:#837c74;
+  --accent:#e8a33d;--accent-ink:#17130d;
+  --done:#7dae77;--missed:#c06a5e;--grace:#7f97b5;--wait:#3b3833;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","Segoe UI Mono",Consolas,"SF Mono",monospace;
+}
+[data-app][data-theme='light']{
+  --bg:#f2f1ef;--panel:#ffffff;--panel2:#f7f6f4;--line:#e2dfda;--line2:#cbc7c0;
+  --text:#1a1917;--text2:#5c5750;--text3:#6f6a63;
+  --accent:#a8680b;--accent-ink:#ffffff;
+  --done:#3f6a3a;--missed:#98453b;--grace:#42597a;--wait:#d8d4ce;
+}
+[data-app] *{box-sizing:border-box;font-variant-numeric:tabular-nums;}
+[data-app] button{font:inherit;color:inherit;border-radius:0;cursor:pointer;}
+[data-app] button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+[data-app] input,[data-app] textarea{font:inherit;color:inherit;border-radius:0;background:none;}
+[data-app] input::placeholder,[data-app] textarea::placeholder{color:var(--text3);}
+[data-app] input:focus-visible,[data-app] textarea:focus-visible{outline:1px solid var(--accent);outline-offset:1px;}

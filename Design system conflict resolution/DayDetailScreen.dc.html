@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="tokens.css">
+</helmet>
+<div data-app data-theme="{{ theme }}" style="width:1400px;height:880px;display:flex;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden;border:1px solid var(--line2)">
+
+  <nav style="width:188px;flex:none;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line)">
+    <div style="padding:20px 20px 16px;border-bottom:1px solid var(--line)">
+      <div style="font-size:14px;font-weight:700;letter-spacing:.2em">I'M HIM</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.06em;margin-top:5px">LOCAL · OFFLINE</div>
+    </div>
+    <div style="display:flex;flex-direction:column;padding:8px 0;gap:1px">
+      <div style="padding:8px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">NOW</div>
+      <sc-for list="{{ navA }}" as="n" hint-placeholder-count="1">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">HISTORY</div>
+      <sc-for list="{{ navB }}" as="n" hint-placeholder-count="6">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+      <div style="padding:12px 20px 5px;font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--text3)">SETUP</div>
+      <sc-for list="{{ navC }}" as="n" hint-placeholder-count="2">
+        <button style="display:flex;align-items:center;gap:10px;height:32px;padding:0 18px;background:{{ n.bg }};border:0;border-left:2px solid {{ n.bar }};font-size:12.5px;text-align:left;color:{{ n.color }};font-weight:{{ n.weight }}" style-hover="background:var(--panel2)">
+          <span style="flex:1">{{ n.label }}</span>
+          <span style="font-family:var(--mono);font-size:10px;color:{{ n.metaColor }}">{{ n.meta }}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="margin-top:auto;padding:14px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:1px">
+      <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text3)">{{ dateLabel }}</div>
+      <div style="font-family:var(--mono);font-size:22px;font-weight:500">{{ clock }}</div>
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text3);margin-top:3px">TUNIS · UTC+1</div>
+    </div>
+  </nav>
+
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;padding:16px 18px 0">
+
+    <div style="display:flex;align-items:stretch;border:1px solid var(--line);background:var(--panel);height:44px;flex:none">
+      <button style="display:flex;align-items:center;gap:9px;padding:0 16px;background:none;border:0;border-right:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--text2)" style-hover="background:var(--panel2);color:var(--text)">
+        <span style="font-size:14px;line-height:1">‹</span>
+        <span>BACK TO CALENDAR</span>
+      </button>
+      <div style="display:flex;align-items:center;gap:14px;padding:0 16px;border-right:1px solid var(--line)">
+        <span style="font-size:16px;font-weight:600;min-width:268px">{{ dayTitle }}</span>
+        <span style="display:flex;gap:6px">
+          <button onClick="{{ prev }}" style="width:26px;height:24px;background:none;border:1px solid var(--line2);color:var(--text2);font-family:var(--mono);font-size:11px" style-hover="border-color:var(--accent);color:var(--text)">‹</button>
+          <button onClick="{{ next }}" style="width:26px;height:24px;background:none;border:1px solid var(--line2);color:var(--text2);font-family:var(--mono);font-size:11px" style-hover="border-color:var(--accent);color:var(--text)">›</button>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;padding:0 16px">
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--done);visibility:{{ fiveVis }}">
+          <path d="M3 14.5V7.5a5 5 0 0 1 10 0v7"></path>
+          <path d="M1 14.5h14"></path>
+        </svg>
+        <svg width="17" height="17" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="square" style="color:var(--accent);visibility:{{ cleanVis }}">
+          <path d="M1.5 11h9.5"></path>
+          <path d="M12.6 11h2"></path>
+          <path d="M3 14.5 13.5 4"></path>
+        </svg>
+      </div>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;padding:0 16px;border-left:1px solid var(--line)">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:{{ modeColor }}">{{ mode }}</span>
+      </div>
+    </div>
+
+    <div style="display:flex;margin-top:10px;flex:none;height:118px;border:1px solid var(--line);background:var(--panel)">
+      <div style="flex:none;width:250px;display:flex;flex-direction:column;justify-content:center;gap:5px;padding:0 22px;border-right:2px solid var(--line2)">
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.15em;color:var(--text3)">DAY SCORE</span>
+        <span style="display:flex;align-items:baseline;gap:8px">
+          <span style="font-family:var(--mono);font-size:54px;font-weight:500;line-height:1;letter-spacing:-.03em;color:{{ scoreColor }}">{{ score }}</span>
+          <span style="font-family:var(--mono);font-size:13px;color:var(--text3)">/100</span>
+        </span>
+        <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text3)">{{ scoreNote }}</span>
+      </div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 22px">
+        <sc-for list="{{ comps }}" as="c" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:12px">
+            <span style="width:74px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--text2)">{{ c.label }}</span>
+            <span style="flex:1;height:6px;background:var(--wait);position:relative">
+              <span style="position:absolute;left:0;top:0;height:6px;background:{{ c.color }};width:{{ c.pct }}%"></span>
+            </span>
+            <span style="font-family:var(--mono);font-size:11.5px;color:var(--text2);width:62px;text-align:right">{{ c.value }}</span>
+            <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3);width:104px;text-align:right">{{ c.detail }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="flex:1;min-height:0;display:flex;gap:10px;margin-top:10px">
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <section style="background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">PRAYERS</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ prayerCount }}</span>
+          </header>
+          <sc-for list="{{ prayers }}" as="p" hint-placeholder-count="5">
+            <div style="display:flex;align-items:center;gap:12px;height:33px;padding:0 16px;border-bottom:1px solid var(--line)">
+              <span style="flex:none;width:15px;height:15px;background:{{ p.fill }};border:1.5px solid {{ p.border }};display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--panel)">{{ p.mark }}</span>
+              <span style="flex:1;font-size:13.5px;color:{{ p.nameColor }}">{{ p.name }}</span>
+              <span style="font-family:var(--mono);font-size:11.5px;color:var(--text3);width:48px;text-align:right">{{ p.due }}</span>
+              <span style="font-family:var(--mono);font-size:11.5px;color:var(--text2);width:48px;text-align:right">{{ p.logged }}</span>
+              <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;width:62px;text-align:right;color:{{ p.stateColor }}">{{ p.state }}</span>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">AVOID</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ avoidCount }}</span>
+          </header>
+          <sc-for list="{{ avoids }}" as="a" hint-placeholder-count="4">
+            <div style="display:flex;flex-direction:column;padding:0 16px;border-bottom:1px solid var(--line)">
+              <div style="display:flex;align-items:center;gap:12px;height:32px">
+                <span style="flex:none;width:15px;height:15px;background:{{ a.fill }};border:1.5px solid {{ a.border }};display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--panel)">{{ a.mark }}</span>
+                <span style="flex:1;min-width:0;font-size:13.5px;color:{{ a.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.name }}</span>
+                <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:{{ a.stateColor }}">{{ a.state }}</span>
+              </div>
+              <sc-if value="{{ a.hasNote }}" hint-placeholder-val="{{ false }}">
+                <div style="padding:0 0 10px 27px;font-family:var(--mono);font-size:11px;color:var(--missed)">{{ a.note }}</div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <section style="background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">HABITS</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ habitCount }}</span>
+          </header>
+          <sc-for list="{{ habits }}" as="h" hint-placeholder-count="6">
+            <div style="display:flex;align-items:center;gap:12px;height:33px;padding:0 16px;border-bottom:1px solid var(--line)">
+              <span style="flex:none;width:15px;height:15px;background:{{ h.fill }};border:1.5px solid {{ h.border }};display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:{{ h.markColor }}">{{ h.mark }}</span>
+              <span style="flex:1;min-width:0;font-size:13.5px;color:{{ h.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.name }}</span>
+              <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--grace);width:60px;text-align:right">{{ h.graceTag }}</span>
+              <span style="font-family:var(--mono);font-size:11.5px;color:var(--text2);width:44px;text-align:right">{{ h.logged }}</span>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">WORK SESSIONS</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ workTotal }}</span>
+          </header>
+          <sc-for list="{{ sessions }}" as="s" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:12px;height:34px;padding:0 16px;border-bottom:1px solid var(--line)">
+              <span style="font-family:var(--mono);font-size:11.5px;color:var(--text3);width:88px">{{ s.span }}</span>
+              <span style="flex:1;min-width:0;font-size:13px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ s.name }}</span>
+              <span style="font-family:var(--mono);font-size:13px;color:var(--text)">{{ s.dur }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noSessions }}" hint-placeholder-val="{{ false }}">
+            <div style="padding:16px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--text3)">NO SESSIONS LOGGED</div>
+          </sc-if>
+        </section>
+      </div>
+
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <section style="background:var(--panel);border:1px solid var(--line);padding:12px 16px 15px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;padding-bottom:11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">SLEEP</span>
+            <span style="font-family:var(--mono);font-size:11px;color:var(--text2)">{{ sleepDur }}</span>
+          </div>
+          <div style="display:flex;gap:0;margin-top:13px">
+            <span style="flex:1;display:flex;flex-direction:column;gap:4px">
+              <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--text3)">TO SLEEP</span>
+              <span style="font-family:var(--mono);font-size:20px;font-weight:500">{{ bedtime }}</span>
+              <span style="font-family:var(--mono);font-size:10.5px;color:{{ bedColor }}">{{ bedDelta }}</span>
+            </span>
+            <span style="flex:1;display:flex;flex-direction:column;gap:4px">
+              <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--text3)">WOKE UP</span>
+              <span style="font-family:var(--mono);font-size:20px;font-weight:500">{{ waketime }}</span>
+              <span style="font-family:var(--mono);font-size:10.5px;color:{{ wakeColor }}">{{ wakeDelta }}</span>
+            </span>
+          </div>
+          <div style="font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--text3);margin-top:13px">TARGET 23:30 → 06:30 · ±30M</div>
+        </section>
+
+        <section style="flex:1;min-height:0;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column">
+          <header style="display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px 11px;border-bottom:2px solid var(--line2)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:.16em">NOTE</span>
+            <span style="font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--accent)">EDITABLE</span>
+          </header>
+          <textarea value="{{ noteVal }}" onChange="{{ setNote }}" placeholder="What happened today." style="flex:1;min-height:0;width:100%;border:0;padding:14px 16px;resize:none;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--text)"></textarea>
+        </section>
+      </div>
+    </div>
+
+    <div style="flex:none;height:24px;display:flex;align-items:center;gap:18px;border-top:1px solid var(--line);margin-top:8px">
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">~/imhim/data.json</span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">{{ recordedAt }}</span>
+      <span style="flex:1"></span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">{{ editHint }}</span>
+      <span style="font-family:var(--mono);font-size:10.5px;color:var(--text3)">[← →] DAY</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1400,&quot;height&quot;:880},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;dark&quot;,&quot;light&quot;],&quot;default&quot;:&quot;dark&quot;,&quot;tsType&quot;:&quot;'dark' | 'light'&quot;}}">
+const INSTALL = new Date(2025, 6, 16);
+const TODAY = new Date(2026, 7, 31);
+const M = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const MF = ['JANUARY','FEBRUARY','MARCH','APRIL','MAY','JUNE','JULY','AUGUST','SEPTEMBER','OCTOBER','NOVEMBER','DECEMBER'];
+const D = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const DF = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+const PRAYERS = [['Fajr','04:19'],['Dhuhr','12:21'],['Asr','15:58'],['Maghrib','18:49'],['Isha','20:14']];
+const HABITS = ['Sport / training','Read 20 minutes','Talk to someone new','Work on a project','Clean space before sleep','Job applications'];
+const AVOIDS = ['No cigarettes / nicotine','No scrolling reels or short-form video','No video games','No sleeping past my target wake time'];
+const SLIP_NOTES = ['', 'forty minutes of reels after dinner', 'two rounds before bed', 'woke at 08:10, alarm ignored'];
+const PROJECTS = ["I'm HIM app", 'Job applications', 'Arabic reading'];
+
+function pad(n){return String(n).padStart(2,'0');}
+function hm(m){m=((m%1440)+1440)%1440;return pad(Math.floor(m/60))+':'+pad(m%60);}
+function hhmm(m){return Math.floor(m/60)+':'+pad(m%60);}
+function rnd(y,m,d,salt){
+  let x = (y*10000 + (m+1)*100 + d) * 2654435761 + salt * 40503;
+  x = (x ^ (x >>> 13)) * 1274126177;
+  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
+}
+function isoWeek(date){
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  return Math.ceil((((d - new Date(d.getFullYear(),0,1))/86400000) + 1)/7);
+}
+const CURRENT_WEEK = isoWeek(TODAY);
+
+class Component extends DCLogic {
+  state = {now:new Date(), offset:-4, notes:{}};   // 27 aug 2026
+  componentDidMount(){ this.iv = setInterval(() => this.setState({now:new Date()}), 1000); }
+  componentWillUnmount(){ clearInterval(this.iv); }
+
+  renderVals(){
+    const now = this.state.now;
+    const date = new Date(TODAY); date.setDate(TODAY.getDate() + this.state.offset);
+    const y = date.getFullYear(), m = date.getMonth(), d = date.getDate();
+    const key = y + '-' + m + '-' + d;
+    const isToday = date.getTime() === TODAY.getTime();
+    const untracked = date < INSTALL;
+
+    const pDone = isToday ? [false,true,false,false,false] : PRAYERS.map((p,k) => rnd(y,m,d,20+k) < 0.74);
+    const hDone = isToday ? [true,false,false,true,true,true] : HABITS.map((h,k) => rnd(y,m,d,30+k) < 0.58);
+    const aClean = isToday ? [true,true,true,true] : [0,1,2,3].map(k => k === 0 || rnd(y,m,d,40+k) < 0.93);
+    const graceIdx = rnd(y,m,d,4) > 0.94 ? 1 : -1;
+
+    const focus = isToday ? 0 : Math.round(rnd(y,m,d,6)*190);
+    // the night of 30 aug is stated on Today and Sleep — keep the one value
+    const isLastNight = y === 2026 && m === 7 && d === 30;
+    const sleep = isLastNight ? 409 : 300 + Math.round(rnd(y,m,d,8)*180);
+    const bedMin = isLastNight ? 1432 : 1410 + Math.round((rnd(y,m,d,9)-0.4)*90);
+    const wakeMin = (bedMin + sleep) % 1440;
+
+    const np = pDone.filter(Boolean).length, nh = hDone.filter(Boolean).length, na = aClean.filter(Boolean).length;
+    const comp = {
+      prayers: (np/5)*25, habits: (nh/6)*25, avoid: (na/4)*20,
+      sleep: isToday ? 0 : Math.min(1, sleep/420)*15,
+      work: isToday ? 0 : Math.min(1, focus/120)*15,
+    };
+    const score = Math.round(comp.prayers + comp.habits + comp.avoid + comp.sleep + comp.work);
+
+    const prayers = PRAYERS.map((p,k) => {
+      const done = pDone[k];
+      const elapsed = !isToday || k < 2;
+      return {
+        name: p[0], due: p[1],
+        mark: done ? '✓' : '',
+        fill: done ? 'var(--done)' : 'transparent',
+        border: done ? 'var(--done)' : elapsed ? 'var(--missed)' : 'var(--line2)',
+        logged: done ? hm(parseInt(p[1].slice(0,2),10)*60 + parseInt(p[1].slice(3),10) + 8 + Math.floor(rnd(y,m,d,50+k)*40)) : '—',
+        state: done ? 'DONE' : elapsed ? 'MISSED' : 'UPCOMING',
+        stateColor: done ? 'var(--done)' : elapsed ? 'var(--missed)' : 'var(--text3)',
+        nameColor: done ? 'var(--text)' : 'var(--text2)',
+      };
+    });
+
+    const habits = HABITS.map((h,k) => {
+      const done = hDone[k];
+      const grace = !done && k === graceIdx;
+      return {
+        name: h,
+        mark: done ? '✓' : grace ? 'G' : '',
+        markColor: done ? 'var(--panel)' : 'var(--grace)',
+        fill: done ? 'var(--done)' : 'transparent',
+        border: done ? 'var(--done)' : grace ? 'var(--grace)' : 'var(--missed)',
+        graceTag: grace ? 'GRACE DAY' : '',
+        logged: done ? hm(420 + Math.floor(rnd(y,m,d,60+k)*900)) : grace ? 'GRACE' : '—',
+        nameColor: done ? 'var(--text)' : grace ? 'var(--grace)' : 'var(--text2)',
+      };
+    });
+
+    const avoids = AVOIDS.map((a,k) => {
+      const clean = aClean[k];
+      return {
+        name: a,
+        mark: clean ? '✓' : '',
+        fill: clean ? 'var(--done)' : 'transparent',
+        border: clean ? 'var(--done)' : 'var(--missed)',
+        state: clean ? 'CLEAN' : 'SLIP',
+        stateColor: clean ? 'var(--done)' : 'var(--missed)',
+        nameColor: clean ? 'var(--text)' : 'var(--text2)',
+        hasNote: !clean,
+        note: SLIP_NOTES[k] ? hm(1080 + Math.floor(rnd(y,m,d,70+k)*300)) + ' · ' + SLIP_NOTES[k] : '',
+      };
+    });
+
+    const sessions = [];
+    let cursor = 540, left = focus, si = 0;
+    while (left > 20 && si < 3){
+      const dur = si === 2 ? left : Math.max(25, Math.round(left * (0.4 + rnd(y,m,d,80+si)*0.4)));
+      const take = Math.min(dur, left);
+      sessions.push({
+        span: hm(cursor) + ' → ' + hm(cursor + take),
+        name: PROJECTS[si],
+        dur: hhmm(take),
+      });
+      cursor += take + 90; left -= take; si++;
+    }
+
+    const mkNav = (arr, active) => arr.map(x => ({
+      label:x[0], meta:x[1],
+      bg: x[0] === active ? 'var(--panel2)' : 'transparent',
+      bar: x[0] === active ? 'var(--accent)' : 'transparent',
+      color: x[0] === active ? 'var(--text)' : 'var(--text2)',
+      weight: x[0] === active ? 600 : 400,
+      metaColor: x[0] === active ? 'var(--accent)' : 'var(--text3)',
+    }));
+
+    const bedDelta = bedMin - 1410, wakeDelta = wakeMin - 390;
+    const fmtDelta = (v) => (v > 0 ? '+' : '') + v + 'M VS TARGET';
+
+    return {
+      theme: this.props.theme || 'dark',
+      navA: mkNav([['Today','42']], ''),
+      navB: mkNav([['Calendar','AUG'],['Week','W' + CURRENT_WEEK],['Work','6:12'],['Sleep','6:49'],['Stats','90D'],['Review','SUN']], 'Calendar'),
+      navC: mkNav([['Lists','6 · 4'],['Settings','']], ''),
+      dayTitle: DF[date.getDay()] + ' ' + pad(d) + ' ' + MF[m] + ' ' + y,
+      mode: isToday ? 'TODAY · EDITABLE' : untracked ? 'BEFORE INSTALL · NO DATA' : 'PAST DAY · NOTE EDITABLE ONLY',
+      modeColor: isToday ? 'var(--accent)' : 'var(--text3)',
+      score: untracked ? '—' : String(score),
+      scoreColor: untracked ? 'var(--text3)' : isToday ? 'var(--accent)' : 'var(--text)',
+      scoreNote: untracked ? 'NOT TRACKED' : 'WEEK ' + isoWeek(date) + ' · ' + D[date.getDay()],
+      comps: [
+        {label:'PRAYERS', pct:(comp.prayers/25)*100, value:Math.round(comp.prayers) + '/25', detail:np + ' of 5 prayed', color:'var(--accent)'},
+        {label:'HABITS', pct:(comp.habits/25)*100, value:Math.round(comp.habits) + '/25', detail:nh + ' of 6 done', color:'color-mix(in oklab, var(--accent) 55%, var(--panel))'},
+        {label:'AVOID', pct:(comp.avoid/20)*100, value:Math.round(comp.avoid) + '/20', detail:na + ' of 4 clean', color:'var(--done)'},
+        {label:'SLEEP', pct:(comp.sleep/15)*100, value:Math.round(comp.sleep) + '/15', detail:hhmm(sleep) + ' slept', color:'var(--grace)'},
+        {label:'WORK', pct:(comp.work/15)*100, value:Math.round(comp.work) + '/15', detail:hhmm(focus) + ' focused', color:'color-mix(in oklab, var(--grace) 45%, var(--panel))'},
+      ],
+      fiveVis: np === 5 ? 'visible' : 'hidden',
+      cleanVis: aClean[0] ? 'visible' : 'hidden',
+      prayers, habits, avoids, sessions,
+      prayerCount: np + ' of 5 prayed',
+      habitCount: nh + ' of 6 done',
+      avoidCount: na + ' of 4 clean',
+      workTotal: hhmm(focus),
+      noSessions: sessions.length === 0,
+      sleepDur: hhmm(sleep),
+      bedtime: hm(bedMin), waketime: hm(wakeMin),
+      bedDelta: fmtDelta(bedDelta), wakeDelta: fmtDelta(wakeDelta),
+      bedColor: Math.abs(bedDelta) <= 30 ? 'var(--done)' : 'var(--missed)',
+      wakeColor: Math.abs(wakeDelta) <= 30 ? 'var(--done)' : 'var(--missed)',
+      noteVal: this.state.notes[key] !== undefined ? this.state.notes[key] : (this.state.offset === -4 ? 'Felt steady all day. Getting to bed earlier is the one thing that would fix the rest of it.' : ''),
+      setNote: (e) => {
+        const v = e.target.value;
+        this.setState(s => ({notes: Object.assign({}, s.notes, {[key]: v})}));
+      },
+      recordedAt: untracked ? 'NO RECORD' : 'LAST WRITE ' + hm(wakeMin + 60) + ' · ' + pad(d) + ' ' + M[m],
+      editHint: isToday ? 'EVERYTHING EDITABLE TODAY' : 'PAST DAYS ARE READ-ONLY EXCEPT THE NOTE',
+      clock: pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds()),
+      dateLabel: D[now.getDay()] + ' ' + pad(now.getDate()) + ' ' + M[now.getMonth()] + ' ' + now.getFullYear(),
+      prev: () => this.setState(s => ({offset: s.offset - 1})),
+      next: () => this.setState(s => ({offset: Math.min(0, s.offset + 1)})),
+    };
+  }
+}
+</script>
+</body>
+</html>

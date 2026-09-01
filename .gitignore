@@ -1,0 +1,15 @@
+node_modules/
+out/
+dist/
+release/
+build/icon.png
+resources/icon.png
+resources/tray.png
+resources/tray@2x.png
+*.log
+.vite/
+.DS_Store
+*.tsbuildinfo
+
+# A stray empty scratch file, kept locally.
+why this will fail.txt
