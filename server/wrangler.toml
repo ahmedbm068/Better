@@ -18,7 +18,7 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "better"
-database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
+database_id = "5f9202bf-e9eb-4f69-b3ec-f3cb170a690d"
 
 [vars]
 # Where GitHub sends the browser back to. Update the host after the first
