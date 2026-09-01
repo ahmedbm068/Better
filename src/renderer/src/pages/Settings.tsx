@@ -7,6 +7,7 @@ import type { FileResult } from '@shared/api'
 import { api } from '../lib/api'
 import { useAction, useAsync } from '../lib/hooks'
 import { Button, Field, Note, Panel, Toggle } from '../components/ui'
+import { SyncPanel } from '../components/sync'
 
 export default function SettingsPage(): React.JSX.Element {
   const { data: stored, reload } = useAsync(() => api.getSettings(), [])
@@ -74,6 +75,8 @@ export default function SettingsPage(): React.JSX.Element {
         <Note tone={action.error.isGuard ? 'info' : 'warn'}>{action.error.message}</Note>
       )}
       {result && <Note>{result}</Note>}
+
+      <SyncPanel platform={info?.platform ?? ""} />
 
       <Panel title="Location and calculation">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
