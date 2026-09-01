@@ -16,6 +16,8 @@ import StatsPage from './pages/Stats'
 import ReviewPage from './pages/Review'
 import ListsPage from './pages/Lists'
 import SettingsPage from './pages/Settings'
+import SignInPage from './pages/SignIn'
+import type { SyncStatus } from '@shared/api'
 
 interface NavItem {
   name: RouteName
@@ -56,6 +58,9 @@ function Sidebar(): React.JSX.Element {
   const { data: settings } = useAsync(() => api.getSettings(), [])
   const { data: day } = useAsync(() => (today ? api.getDay(today) : Promise.resolve(null)), [today])
   const { data: totals } = useAsync(() => api.getWorkTotals(), [])
+  const { data: sync, reload: reloadSync } = useAsync(() => api.syncStatus(), [])
+
+  useAppEvent('sync:changed', reloadSync)
 
   const tz = settings?.timezone ?? 'UTC'
 
@@ -70,7 +75,10 @@ function Sidebar(): React.JSX.Element {
     <nav className="w-[188px] shrink-0 border-r border-line bg-panel flex flex-col">
       <div className="px-[18px] pt-4 pb-3.5 border-b border-line select-none">
         <div className="num text-accent font-bold tracking-[0.2em] text-[14px]">BETTER</div>
-        <div className="micro mt-1">Local · Offline</div>
+        {/* Said what it was, always. Now it says what it is. */}
+        <div className="micro mt-1" title={sync?.email ?? undefined}>
+          {sync?.signedIn ? (sync.pending ? 'Synced · Pending' : 'Synced') : 'Local · Offline'}
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto py-2">
@@ -269,9 +277,23 @@ function Shell(): React.JSX.Element {
   )
 }
 
+/** Remembers that someone chose to carry on without an account. */
+const SKIPPED_KEY = 'better:no-account'
+
+const hasSkipped = (): boolean => {
+  try {
+    return localStorage.getItem(SKIPPED_KEY) === '1'
+  } catch {
+    // A browser refusing storage is not a reason to block the app.
+    return true
+  }
+}
+
 export default function App(): React.JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
+  const [gate, setGate] = useState<{ web: boolean; status: SyncStatus } | null>(null)
+  const [skipped, setSkipped] = useState(hasSkipped)
 
   useEffect(() => {
     api
@@ -279,6 +301,30 @@ export default function App(): React.JSX.Element {
       .then(setSettings)
       .catch((err: Error) => setFailed(err.message))
   }, [])
+
+  // Only the web client is gated. The desktop app is offline-first, and asking
+  // it to sign in before showing anything would break the promise it exists for.
+  useEffect(() => {
+    void Promise.all([api.getInfo(), api.syncStatus()])
+      .then(([info, status]) => setGate({ web: info.platform === 'web', status }))
+      .catch(() => setGate(null))
+  }, [])
+
+  useAppEvent('sync:changed', () => {
+    void api.syncStatus().then((status) => {
+      setGate((g) => (g ? { ...g, status } : g))
+      if (status.signedIn) {
+        // Clear the skip, so signing out later returns to the front door
+        // rather than silently dropping into the local-only app.
+        try {
+          localStorage.removeItem(SKIPPED_KEY)
+        } catch {
+          // Nothing stored, nothing to clear.
+        }
+        setSkipped(false)
+      }
+    })
+  })
 
   // The theme lives on <html> so the CSS variables cascade to everything.
   useEffect(() => {
@@ -291,6 +337,21 @@ export default function App(): React.JSX.Element {
       .then(setSettings)
       .catch(() => undefined)
   })
+
+  if (gate?.web && !gate.status.signedIn && !skipped) {
+    return (
+      <SignInPage
+        onSkip={() => {
+          try {
+            localStorage.setItem(SKIPPED_KEY, '1')
+          } catch {
+            // Nothing to remember it with; the choice lasts this visit only.
+          }
+          setSkipped(true)
+        }}
+      />
+    )
+  }
 
   if (failed) {
     return (

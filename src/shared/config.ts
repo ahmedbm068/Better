@@ -6,3 +6,12 @@
  * sign in and would otherwise make the user type a URL from memory.
  */
 export const DEFAULT_SYNC_SERVER = 'https://better.a-benmasseoud23353.workers.dev'
+
+/**
+ * Where the Windows installer is published.
+ *
+ * GitHub Releases rather than the Worker: an Electron installer is far larger
+ * than a Worker asset may be, and a release page gives version history and
+ * checksums for free.
+ */
+export const DOWNLOAD_URL = 'https://github.com/ahmedbm068/Better/releases/latest'
