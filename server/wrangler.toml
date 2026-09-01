@@ -21,9 +21,9 @@ database_name = "better"
 database_id = "5f9202bf-e9eb-4f69-b3ec-f3cb170a690d"
 
 [vars]
-# Where GitHub sends the browser back to. Update the host after the first
-# deploy, and register the same URL on the OAuth app.
-OAUTH_REDIRECT_URI = "http://localhost:8787/auth/github/callback"
+# Where GitHub sends the browser back to. Must match the redirect URI on the
+# OAuth app character for character, or GitHub refuses the exchange.
+OAUTH_REDIRECT_URI = "https://better.a-benmasseoud23353.workers.dev/auth/github/callback"
 
 # GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are secrets, never vars:
 #   npx wrangler secret put GITHUB_CLIENT_ID
