@@ -13,6 +13,7 @@
     "start": "electron-vite preview",
     "build": "npm run typecheck && npm run test && electron-vite build",
     "build:web": "vite build --config vite.web.config.ts",
+    "deploy": "npm run build:web && wrangler deploy --config server/wrangler.toml",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p server/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <!--
-      Tighter than it looks: the only remote destination allowed is the sync
-      server, and `wasm-unsafe-eval` is what lets sql.js instantiate its module
-      without opening the door to eval of script text.
+      The Worker serving this page is also its API, so nothing here needs a
+      remote origin. `wasm-unsafe-eval` is what lets sql.js instantiate its
+      module without opening the door to eval of script text.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: http://localhost:8787"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
     />
     <title>Better</title>
     <style>

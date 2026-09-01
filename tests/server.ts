@@ -76,10 +76,15 @@ const stubProvider = (id = '12345'): IdentityProvider => ({
 const env = (): Env =>
   ({
     DB: undefined as never,
+    // The static bundle is not built during this check, so a request that
+    // reaches it is a routing mistake and says so rather than 404ing quietly.
+    ASSETS: {
+      fetch: async () => new Response('served the web client', { status: 200 })
+    },
     GITHUB_CLIENT_ID: 'id',
     GITHUB_CLIENT_SECRET: 'secret',
     OAUTH_REDIRECT_URI: 'http://localhost:8787/auth/github/callback'
-  }) as Env
+  }) as unknown as Env
 
 /** A prayer times row for a day, so marks for it can be judged. */
 function timesRow(date: string, base: number): Record<string, SqlValue> {

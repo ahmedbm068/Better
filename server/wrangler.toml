@@ -1,8 +1,19 @@
-name = "better-sync"
+name = "better"
 main = "src/index.ts"
 compatibility_date = "2026-01-01"
 
-# D1 is SQLite, which is why the server and the desktop app can share both the
+# The built web client, served by this same Worker. One origin for the app and
+# its API: no CORS, no second host, and a content policy that stays 'self'.
+#
+# The Worker runs first and answers /health, /auth/*, /me and /changes; anything
+# else falls through to these files.
+[assets]
+directory = "../out/web"
+binding = "ASSETS"
+# A refresh on any in-app route should get the app, not a 404.
+not_found_handling = "single-page-application"
+
+# D1 is SQLite, which is why the server and the desktop app share both the
 # dialect and the merge rules in src/shared.
 [[d1_databases]]
 binding = "DB"
@@ -10,10 +21,10 @@ database_name = "better"
 database_id = "REPLACE_WITH_ID_FROM_wrangler_d1_create"
 
 [vars]
-# Set for local development. In production put the real values in the dashboard
-# or with `wrangler secret put`, never here.
+# Where GitHub sends the browser back to. Update the host after the first
+# deploy, and register the same URL on the OAuth app.
 OAUTH_REDIRECT_URI = "http://localhost:8787/auth/github/callback"
 
-# GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are secrets:
-#   wrangler secret put GITHUB_CLIENT_ID
-#   wrangler secret put GITHUB_CLIENT_SECRET
+# GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are secrets, never vars:
+#   npx wrangler secret put GITHUB_CLIENT_ID
+#   npx wrangler secret put GITHUB_CLIENT_SECRET

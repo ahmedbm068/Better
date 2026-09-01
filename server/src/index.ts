@@ -24,6 +24,13 @@ import type { SyncRows } from '@shared/sync'
 
 export interface Env {
   DB: D1Database
+  /**
+   * The built web client, served by this same Worker.
+   *
+   * One origin for the app and its API is the point: no CORS preflights, no
+   * second host to configure, and a content policy that can stay `'self'`.
+   */
+  ASSETS: { fetch(request: Request): Promise<Response> }
   GITHUB_CLIENT_ID: string
   GITHUB_CLIENT_SECRET: string
   /** Where GitHub sends the browser back to, and where the app collects a token. */
@@ -128,8 +135,22 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
   return problem('no such endpoint', 404)
 }
 
+/** Paths this Worker answers itself. Everything else is the web client. */
+const API_PREFIXES = ['/health', '/auth/', '/me', '/changes']
+
+const isApiRoute = (pathname: string): boolean =>
+  API_PREFIXES.some((prefix) =>
+    prefix.endsWith('/') ? pathname.startsWith(prefix) : pathname === prefix
+  )
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
+    const { pathname } = new URL(request.url)
+
+    // Static first, and without touching the database: most requests are for
+    // the app itself, and they should not pay for a migration check.
+    if (!isApiRoute(pathname)) return env.ASSETS.fetch(request)
+
     const sql = d1(env.DB)
     await sql.migrate(SCHEMA)
     try {

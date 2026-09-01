@@ -28,6 +28,7 @@ Other scripts:
 | `npm run dist:dir` | Unpacked build in `release/win-unpacked`, for quick checks |
 | `npm run dev:web` | The web client, on http://localhost:5174 |
 | `npm run build:web` | Static web bundle in `out/web` |
+| `npm run deploy` | Builds the web client and deploys it with the Worker |
 
 ## How it is put together
 
@@ -159,6 +160,12 @@ src/web/
 
 Signed out it is a usable local app, so it can be tried before signing up.
 Signed in it pulls the account before the first paint.
+
+It is served by the sync Worker itself rather than by separate static hosting.
+One origin for the app and its API means no CORS, no second host to keep in
+step, and a content policy that never has to name anyone but `'self'`. In
+development the Vite server proxies the API across to `wrangler dev`, so that
+holds there too.
 
 The browser copy is a cache, not the record. Clearing site data loses it, and
 the server is what makes that survivable — which is also why the download is

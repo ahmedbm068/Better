@@ -36,7 +36,17 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: { input: resolve(root, 'src/web/index.html') }
   },
-  server: { port: 5174 },
+  server: {
+    port: 5174,
+    // Keeps development same-origin as well, so no CORS anywhere and no
+    // separate configuration for the dev build.
+    proxy: Object.fromEntries(
+      ['/health', '/auth', '/me', '/changes'].map((path) => [
+        path,
+        { target: 'http://localhost:8787', changeOrigin: true }
+      ])
+    )
+  },
   // sql.js reaches for these Node built-ins behind a feature check that a
   // bundler cannot see through; stubbing them keeps the check falsy.
   optimizeDeps: { exclude: ['sql.js'] }

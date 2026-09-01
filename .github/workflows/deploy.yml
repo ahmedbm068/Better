@@ -1,0 +1,52 @@
+# Builds the web client and deploys it with the Worker that serves it.
+#
+# One deploy, not two: the Worker answers the API and hands out the static
+# bundle, so they cannot drift apart or land on different origins.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'server/**'
+      - 'vite.web.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # --ignore-scripts skips the Electron postinstall, which rebuilds
+      # better-sqlite3 against Electron ABI. The web client uses sql.js and
+      # never loads the native module, so that work is pure cost here.
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      # Into out/web, which wrangler.toml points the assets binding at.
+      - name: Build web client
+        run: npm run build:web
+
+      - name: Deploy Worker and assets
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: server

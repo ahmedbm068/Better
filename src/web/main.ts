@@ -9,7 +9,14 @@
  */
 import { boot } from './boot'
 
-const SERVER = import.meta.env.VITE_SYNC_SERVER ?? 'http://localhost:8787'
+/**
+ * The Worker that serves this page is also its API, so the default is simply
+ * where we were loaded from. VITE_SYNC_SERVER is only for a split deployment.
+ *
+ * `location.origin` rather than an empty string: the account record treats a
+ * blank server as "not signed in".
+ */
+const SERVER = import.meta.env.VITE_SYNC_SERVER || location.origin
 const VERSION = import.meta.env.VITE_APP_VERSION ?? '0.0.0'
 
 const splash = document.getElementById('splash')
