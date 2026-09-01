@@ -443,6 +443,60 @@ async function main(): Promise<void> {
       locked
     )
 
+
+    section('two people cannot see each other')
+    const alice = await completeOAuth(
+      sql,
+      stubProvider('a1', 'alice@example.com'),
+      'c',
+      new URL(await beginOAuth(sql, stubProvider())).searchParams.get('state')!
+    )
+    const bob = await completeOAuth(
+      sql,
+      stubProvider('b1', 'bob@example.com'),
+      'c',
+      new URL(await beginOAuth(sql, stubProvider())).searchParams.get('state')!
+    )
+    check('they are different accounts', alice.user.id !== bob.user.id)
+
+    const noteFor = (who: string): SyncRows => ({
+      day_notes: [
+        { date: '2026-10-01', note: `${who} wrote this`, updated_at: now, deleted_at: null }
+      ]
+    })
+    await push(sql, alice.user.id, noteFor('alice'), now)
+    await push(sql, bob.user.id, noteFor('bob'), now)
+
+    const alicePull = await pull(sql, alice.user.id, 0)
+    const bobPull = await pull(sql, bob.user.id, 0)
+    const aliceNotes = alicePull.rows.day_notes ?? []
+    const bobNotes = bobPull.rows.day_notes ?? []
+
+    check(
+      'each sees exactly one note on that day',
+      aliceNotes.length === 1 && bobNotes.length === 1,
+      `alice ${aliceNotes.length}, bob ${bobNotes.length}`
+    )
+    check('and it is their own', aliceNotes[0]?.note === 'alice wrote this')
+    check('not the other one', bobNotes[0]?.note === 'bob wrote this')
+    check(
+      'nothing of the other account leaks into a pull',
+      JSON.stringify(alicePull.rows).includes('bob') === false,
+      'the whole change set is scoped to one user'
+    )
+
+    const aliceSession = await authenticate(sql, `Bearer ${alice.token}`)
+    check(
+      'a session only ever resolves to its own account',
+      aliceSession?.id === alice.user.id && aliceSession?.id !== bob.user.id
+    )
+
+    // Writing under one account must not touch another, even on the same key.
+    const beforeBob = (await pull(sql, bob.user.id, 0)).rows.day_notes?.[0]?.note
+    await push(sql, alice.user.id, noteFor('alice again'), now + 1000)
+    const afterBob = (await pull(sql, bob.user.id, 0)).rows.day_notes?.[0]?.note
+    check('a write by one leaves the other untouched', beforeBob === afterBob, String(afterBob))
+
     section('the routes')
     const bearer = { Authorization: `Bearer ${token}` }
     const health = await handle(new Request('http://x/health'), env(), sql)
