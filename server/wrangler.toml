@@ -12,6 +12,11 @@ directory = "../out/web"
 binding = "ASSETS"
 # A refresh on any in-app route should get the app, not a 404.
 not_found_handling = "single-page-application"
+# Without this the asset layer answers browser navigations itself, before the
+# Worker runs, and the SPA fallback above swallows /auth/github/start. It is
+# invisible to a plain fetch: the interception keys off Sec-Fetch-Mode, which
+# only a real navigation sends.
+run_worker_first = ["/health", "/me", "/changes", "/auth/*"]
 
 # D1 is SQLite, which is why the server and the desktop app share both the
 # dialect and the merge rules in src/shared.
