@@ -16,7 +16,7 @@ not_found_handling = "single-page-application"
 # Worker runs, and the SPA fallback above swallows /auth/github/start. It is
 # invisible to a plain fetch: the interception keys off Sec-Fetch-Mode, which
 # only a real navigation sends.
-run_worker_first = ["/health", "/me", "/changes", "/auth/*"]
+run_worker_first = ["/health", "/me", "/changes", "/auth/*", "/download"]
 
 # D1 is SQLite, which is why the server and the desktop app share both the
 # dialect and the merge rules in src/shared.
