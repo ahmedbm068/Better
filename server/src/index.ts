@@ -87,11 +87,14 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
           return Response.redirect(target.toString(), 302)
         }
 
-        // For the browser the token rides in the fragment, which a browser never sends
-        // to a server, so it stays out of every access log on the way.
-        return env.APP_URL
-          ? Response.redirect(`${env.APP_URL}#token=${token}`, 302)
-          : json({ token })
+        // Back into the app, which this same Worker serves, so the origin we
+        // were reached on is the right place to send them. APP_URL only exists
+        // for a split deployment.
+        //
+        // The token rides in the fragment, which a browser never sends to a
+        // server, so it stays out of every access log on the way.
+        const app = env.APP_URL ?? url.origin
+        return Response.redirect(`${app}/#token=${token}&user=${user.id}`, 302)
       } catch (err) {
         if (err instanceof AuthError) return problem(err.message, 401)
         throw err
