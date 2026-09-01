@@ -8,10 +8,10 @@
 export const DEFAULT_SYNC_SERVER = 'https://better.a-benmasseoud23353.workers.dev'
 
 /**
- * Where the Windows installer is published.
+ * Where the Windows installer comes from.
  *
- * GitHub Releases rather than the Worker: an Electron installer is far larger
- * than a Worker asset may be, and a release page gives version history and
- * checksums for free.
+ * A path, not a host: the Worker serves it, streaming from R2 because a 109 MB
+ * installer is far larger than a Worker asset may be. Until that bucket exists
+ * the same route redirects to the releases page, so the button is never dead.
  */
-export const DOWNLOAD_URL = 'https://github.com/ahmedbm068/Better/releases/latest'
+export const DOWNLOAD_URL = '/download'

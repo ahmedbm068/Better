@@ -131,8 +131,6 @@ export default function SignInPage({
           </p>
           <a
             href={DOWNLOAD_URL}
-            target="_blank"
-            rel="noreferrer"
             className="inline-block w-full text-center border border-line px-3 py-2 text-[12.5px] tracking-wide hover:border-line-strong"
           >
             DOWNLOAD FOR WINDOWS

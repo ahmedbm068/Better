@@ -45,7 +45,22 @@ export interface Env {
   APP_URL?: string
   /** Overrides where a desktop sign-in is sent back to. */
   DESKTOP_CALLBACK_URL?: string
+  /**
+   * The bucket holding the Windows installer.
+   *
+   * Optional: the installer is far larger than a Worker asset may be, so it
+   * lives in R2. Until that is enabled the download falls through to the
+   * releases page, which keeps the button honest rather than broken.
+   */
+  DOWNLOADS?: R2Bucket
+  /** Where /download sends people when the bucket is not configured. */
+  RELEASES_URL?: string
 }
+
+/** The object key for the current installer. */
+const INSTALLER_KEY = 'Better-Setup.exe'
+
+const RELEASES_FALLBACK = 'https://github.com/ahmedbm068/Better/releases/latest'
 
 /** Matches CALLBACK_PORT in the desktop app; the two have to agree. */
 const DESKTOP_CALLBACK = 'http://127.0.0.1:53682/callback'
@@ -75,6 +90,23 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
   switch (route) {
     case 'GET /health':
       return json({ ok: true })
+
+    case 'GET /download': {
+      const object = await env.DOWNLOADS?.get(INSTALLER_KEY)
+      if (!object) {
+        return Response.redirect(env.RELEASES_URL ?? RELEASES_FALLBACK, 302)
+      }
+      return new Response(object.body, {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Disposition': `attachment; filename="${INSTALLER_KEY}"`,
+          'Content-Length': String(object.size),
+          // Installers are immutable once published; a day is plenty and keeps
+          // repeat downloads off the bucket.
+          'Cache-Control': 'public, max-age=86400'
+        }
+      })
+    }
 
     case 'GET /auth/github/start':
     case 'GET /auth/google/start':
@@ -198,7 +230,7 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
 }
 
 /** Paths this Worker answers itself. Everything else is the web client. */
-const API_PREFIXES = ['/health', '/auth/', '/me', '/changes']
+const API_PREFIXES = ['/health', '/auth/', '/me', '/changes', '/download']
 
 const isApiRoute = (pathname: string): boolean =>
   API_PREFIXES.some((prefix) =>
