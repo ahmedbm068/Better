@@ -4,6 +4,7 @@ import { addDays, daysBetween, endOfWeek, startOfWeek, wallMinutes } from '@shar
 import { readSettings } from '../db/settings'
 import { currentDate, isTracked, scoreFor, getPrayerStatuses } from './dayService'
 import { warmRange } from './prayerTimes'
+import { countDone, countLate } from '@shared/prayer'
 import { avoidStreak, habitStreak } from './streaksService'
 import * as habitsRepo from '../db/repo/habits'
 import * as avoidRepo from '../db/repo/avoid'
@@ -26,11 +27,9 @@ export function weekStats(anchor: DateStr, now: Millis = Date.now()): WeekStats 
   if (dates.length > 0) warmRange(dates[0], last, settings)
 
   const days = dates.map((date) => ({ date, score: scoreFor(date, now, settings).total }))
-  const prayersDone = dates.reduce(
-    (sum, date) =>
-      sum + getPrayerStatuses(date, now, settings).filter((s) => s.state === 'done').length,
-    0
-  )
+  const prayerDays = dates.map((date) => getPrayerStatuses(date, now, settings))
+  const prayersDone = prayerDays.reduce((sum, st) => sum + countDone(st), 0)
+  const prayersLate = prayerDays.reduce((sum, st) => sum + countLate(st), 0)
   const prayersPossible = dates.length * 5
 
   const sleeps = sleepRepo
@@ -58,6 +57,7 @@ export function weekStats(anchor: DateStr, now: Millis = Date.now()): WeekStats 
     avgScore: days.length ? Math.round(days.reduce((s, d) => s + d.score, 0) / days.length) : 0,
     prayerRate: prayersPossible ? prayersDone / prayersPossible : 0,
     prayersDone,
+    prayersLate,
     prayersPossible,
     focusedHours: Math.round(focusedHours * 10) / 10,
     avgSleepHours: Math.round(avgSleepHours * 10) / 10,

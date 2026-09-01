@@ -43,8 +43,9 @@ function handlePrayer(
   const label = PRAYER_LABELS[status.prayer]
   const key = (moment: string) => `${date}:${status.prayer}:${moment}`
 
-  // A done or not-yet-open prayer has nothing to say.
-  if (status.state === 'done') return
+  // A prayed or not-yet-open prayer has nothing to say. A made-up one already
+  // went through `missed` on an earlier tick, so its reminders are long silent.
+  if (status.state === 'done' || status.state === 'late') return
   if (status.state === 'missed') {
     // Close out the day's pending reminders quietly, with no notification.
     silence(key('open'))

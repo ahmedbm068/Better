@@ -30,6 +30,7 @@
   --accent: #e8a33d;
   --accent-ink: #17130d;
   --done: #7dae77;
+  --late: #5e8465;
   --missed: #c06a5e;
   --grace: #7f97b5;
   --wait: #3b3833;
@@ -48,6 +49,7 @@
   --accent: #a8680b;
   --accent-ink: #ffffff;
   --done: #3f6a3a;
+  --late: #6d8a67;
   --missed: #98453b;
   --grace: #42597a;
   --wait: #d8d4ce;
@@ -67,6 +69,7 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-done: var(--done);
+  --color-late: var(--late);
   --color-missed: var(--missed);
   --color-grace: var(--grace);
   --color-wait: var(--wait);

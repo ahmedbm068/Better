@@ -235,9 +235,11 @@ function DayColumn({
                   className={`text-[11px] ${
                     p.state === 'done'
                       ? 'text-done'
-                      : p.state === 'missed'
-                        ? 'text-missed'
-                        : 'text-faint'
+                      : p.state === 'late'
+                        ? 'text-late'
+                        : p.state === 'missed'
+                          ? 'text-missed'
+                          : 'text-faint'
                   }`}
                 >
                   {PRAYER_LABELS[p.prayer as PrayerName]}

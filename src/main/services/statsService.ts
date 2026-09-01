@@ -8,6 +8,7 @@ import { readSettings } from '../db/settings'
 import { currentDate, scoreFor, getPrayerStatuses, isPerfectPrayerDay } from './dayService'
 import { warmRange } from './prayerTimes'
 import { avoidCleanDays, avoidStreak, habitStreak, perfectPrayerStreak } from './streaksService'
+import { countDone, countLate } from '@shared/prayer'
 import { appliesOnWeekday } from '@shared/streaks'
 import { weekdayOf } from '@shared/time'
 import * as habitsRepo from '../db/repo/habits'
@@ -32,7 +33,9 @@ export function historyStart(now: Millis = Date.now()): DateStr {
 export interface DailyPoint {
   date: DateStr
   score: number
+  /** Prayed inside the window. Make-ups are tracked apart, and stay apart. */
   prayersDone: number
+  prayersLate: number
   habitsDone: number
   habitsApplicable: number
   /** 0..1, or null on a day with no applicable habits. */
@@ -75,10 +78,12 @@ export function dailySeries(days: number, now: Millis = Date.now()): DailyPoint[
     )
     const done = doneByDate.get(date) ?? new Set<number>()
     const habitsDone = applicable.filter((h) => done.has(h.id)).length
+    const prayers = getPrayerStatuses(date, now, settings)
     return {
       date,
       score: scoreFor(date, now, settings).total,
-      prayersDone: getPrayerStatuses(date, now, settings).filter((s) => s.state === 'done').length,
+      prayersDone: countDone(prayers),
+      prayersLate: countLate(prayers),
       habitsDone,
       habitsApplicable: applicable.length,
       habitRatio: applicable.length ? habitsDone / applicable.length : null,
@@ -223,6 +228,7 @@ export interface StatsOverview {
     daysTracked: number
     avgScore: number
     prayersDone: number
+    prayersLate: number
     prayersPossible: number
     focusedHours: number
   }
@@ -231,6 +237,7 @@ export interface StatsOverview {
 export function statsOverview(days = 90, now: Millis = Date.now()): StatsOverview {
   const series = dailySeries(days, now)
   const prayersDone = series.reduce((s, p) => s + p.prayersDone, 0)
+  const prayersLate = series.reduce((s, p) => s + p.prayersLate, 0)
   const focusedSeconds = series.reduce((s, p) => s + p.workSeconds, 0)
   const avg = series.length
     ? Math.round(series.reduce((s, p) => s + p.score, 0) / series.length)
@@ -249,6 +256,7 @@ export function statsOverview(days = 90, now: Millis = Date.now()): StatsOvervie
       daysTracked: series.length,
       avgScore: avg,
       prayersDone,
+      prayersLate,
       prayersPossible: series.length * 5,
       focusedHours: Math.round((focusedSeconds / 3600) * 10) / 10
     }

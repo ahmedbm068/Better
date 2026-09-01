@@ -1,7 +1,7 @@
 /**
  * Daily score, out of 100.
  *
- *   Prayers  40  (8 per prayer done in time)
+ *   Prayers  40  (8 per prayer done in time, 3 per one made up late)
  *   Habits   25  (proportional to applicable habits completed)
  *   Avoid    20  (proportional to items with no slip)
  *   Sleep    10  (both ends within tolerance of target)
@@ -15,8 +15,16 @@ import type { ScoreBreakdown } from './types'
 export const SCORE_WEIGHTS = { prayers: 40, habits: 25, avoid: 20, sleep: 10, work: 5 } as const
 export const POINTS_PER_PRAYER = 8
 
+/**
+ * A made-up prayer earns less than one prayed on time, and the gap is the
+ * point: qada is a real recovery, not an eraser. Three of eight — enough that
+ * making one up plainly beats abandoning it, far short of never having missed.
+ */
+export const POINTS_PER_LATE_PRAYER = 3
+
 export interface ScoreInput {
   prayersDone: number
+  prayersLate: number
   habitsApplicable: number
   habitsDone: number
   avoidActive: number
@@ -28,7 +36,13 @@ export interface ScoreInput {
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
 
 export function computeScore(input: ScoreInput): ScoreBreakdown {
-  const prayers = clamp(input.prayersDone, 0, 5) * POINTS_PER_PRAYER
+  // Capped at the category weight, so five made up plus a miscount can never
+  // out-earn five kept.
+  const prayers = Math.min(
+    SCORE_WEIGHTS.prayers,
+    clamp(input.prayersDone, 0, 5) * POINTS_PER_PRAYER +
+      clamp(input.prayersLate, 0, 5) * POINTS_PER_LATE_PRAYER
+  )
 
   // With nothing to track, the category is not held against the day.
   const habits =

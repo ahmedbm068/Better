@@ -12,6 +12,7 @@ import { readSettings } from './db/settings'
 import { registerIpc } from './ipc'
 import { startScheduler, stopScheduler, tooltipText } from './services/scheduler'
 import * as sync from './services/syncService'
+import { startUpdater } from './services/updater'
 import { currentDate, ensureTrackingStart } from './services/dayService'
 
 app.commandLine.appendSwitch('disable-gpu')
@@ -37,6 +38,7 @@ let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
 let quitting = false
 let stopSync: (() => void) | null = null
+let stopUpdater: (() => void) | null = null
 
 /** How often a signed-in device checks in. A tracker does not need to be chatty. */
 const SYNC_INTERVAL_MS = 15 * 60 * 1000
@@ -227,6 +229,10 @@ if (!app.requestSingleInstanceLock()) {
       broadcast('sync:changed')
     })
 
+    // Updates are checked quietly in the background and installed on quit, or
+    // sooner from Settings. Nothing here blocks or interrupts anything.
+    stopUpdater = startUpdater(() => broadcast('update:changed'))
+
     console.log(`Better — database at ${getDbPath()}`)
   })
 
@@ -246,6 +252,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('will-quit', () => {
     stopScheduler()
     stopSync?.()
+    stopUpdater?.()
     globalShortcut.unregisterAll()
     closeDatabase()
   })

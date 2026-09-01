@@ -22,6 +22,7 @@ import * as backup from './services/backupService'
 import { quitStats } from './services/quitService'
 import * as sync from './services/syncService'
 import { signIn } from './services/signIn'
+import * as updater from './services/updater'
 import { clearAccount, getAccount, setAccount } from './db/account'
 import { loginWithPassword, putPassword } from './services/syncClient'
 import * as habitsRepo from './db/repo/habits'
@@ -393,4 +394,9 @@ export function registerIpc(dependencies: IpcDeps): void {
   })
 
   handle('syncStatus', () => sync.status())
+
+  // ---- updates ------------------------------------------------------------
+  handle('updateStatus', () => updater.currentStatus())
+  handle('checkForUpdate', () => updater.checkNow())
+  handle('installUpdate', () => updater.installNow())
 }

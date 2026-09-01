@@ -26,7 +26,7 @@ import { quitStats } from '../src/main/services/quitService'
 import * as habitsRepo from '../src/main/db/repo/habits'
 import * as avoidRepo from '../src/main/db/repo/avoid'
 import * as prayersRepo from '../src/main/db/repo/prayers'
-import { buildWindows } from '../src/shared/prayer'
+import { buildWindows, MAKEUP_WINDOW_MS } from '../src/shared/prayer'
 import { formatClock } from '../src/shared/format'
 import { addDays } from '../src/shared/time'
 
@@ -117,15 +117,17 @@ function run(): void {
     section('prayer guards')
     const windows = buildWindows(times)
     const fajr = windows[0]
-    // Aim squarely at a moment inside the Fajr window and one after it closed.
+    // Three moments: inside the Fajr window, just after it closed (where a
+    // make-up is still allowed), and past the make-up limit entirely.
     const insideFajr = fajr.start + Math.floor((fajr.end - fajr.start) / 2)
     const afterFajr = fajr.end + 60_000
+    const wayAfterFajr = fajr.end + MAKEUP_WINDOW_MS + 60_000
 
     expectThrows('refuses a check before the window opens', () =>
       day.checkPrayer(today, 'fajr', fajr.start - 60_000)
     )
-    expectThrows('refuses a retroactive check after the window closed', () =>
-      day.checkPrayer(today, 'fajr', afterFajr)
+    expectThrows('refuses a make-up long after the window closed', () =>
+      day.checkPrayer(today, 'fajr', wayAfterFajr)
     )
 
     day.checkPrayer(today, 'fajr', insideFajr)
@@ -133,12 +135,56 @@ function run(): void {
     check('records a check made inside the window', afterCheck[0].state === 'done')
     check('keeps it done after the window closes', afterCheck[0].doneAt === insideFajr)
 
-    expectThrows('refuses to undo a check once the window closed', () =>
+    expectThrows('refuses to undo an on-time check once the window closed', () =>
       day.uncheckPrayer(today, 'fajr', afterFajr)
     )
     check(
       'leaves an unchecked closed window as missed',
       day.getPrayerStatuses(today, times.nextFajr + 1, settings)[1].state === 'missed'
+    )
+
+    section('making a missed prayer up')
+    // Dhuhr is left alone by the rest of the suite, so it can be missed, made
+    // up and withdrawn here without disturbing anything downstream.
+    const dhuhr = windows[1]
+    const afterDhuhr = dhuhr.end + 60_000
+    const wayAfterDhuhr = dhuhr.end + MAKEUP_WINDOW_MS + 60_000
+
+    check(
+      'offers a make-up on a recently missed prayer',
+      day.getPrayerStatuses(today, afterDhuhr, settings)[1].canMakeUp === true
+    )
+
+    const madeUp = day.checkPrayer(today, 'dhuhr', afterDhuhr)
+    check('records a make-up as late, never as done', madeUp[1].state === 'late')
+    check('stamps the make-up with the time it was recorded', madeUp[1].doneAt === afterDhuhr)
+    check(
+      'scores a make-up below an on-time prayer but above a miss',
+      day.scoreFor(today, afterDhuhr, settings).prayers === 8 + 3
+    )
+    check(
+      'keeps a make-up out of the 5/5 day',
+      day.isPerfectPrayerDay(today, afterDhuhr, settings) === false
+    )
+    check(
+      'still reads as late long after the fact',
+      day.getPrayerStatuses(today, wayAfterDhuhr, settings)[1].state === 'late'
+    )
+
+    day.uncheckPrayer(today, 'dhuhr', afterDhuhr)
+    check(
+      'withdraws a mis-tapped make-up while the window allows it',
+      day.getPrayerStatuses(today, afterDhuhr, settings)[1].state === 'missed'
+    )
+
+    day.checkPrayer(today, 'dhuhr', afterDhuhr)
+    expectThrows('refuses to withdraw a make-up once its window has passed', () =>
+      day.uncheckPrayer(today, 'dhuhr', wayAfterDhuhr)
+    )
+    day.uncheckPrayer(today, 'dhuhr', afterDhuhr)
+    check(
+      'leaves the day as it found it',
+      day.getPrayerStatuses(today, afterDhuhr, settings)[1].state === 'missed'
     )
 
     section('days before tracking started')

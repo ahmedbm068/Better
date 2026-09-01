@@ -3,7 +3,8 @@
  *
  * The score sits left of a strip that breaks it into its five components, each
  * showing not only the points but what produced them. Past days are read-only
- * except the note; the top bar says so rather than leaving you to discover it.
+ * except the note and a prayer still inside its make-up window; the top bar
+ * says so rather than leaving you to discover it.
  */
 import { useEffect, useState } from 'react'
 import type { DateStr } from '@shared/types'
@@ -51,6 +52,7 @@ export default function DayDetailPage({ date }: { date: DateStr }): React.JSX.El
 
   const tz = settings.timezone
   const prayersDone = day.prayers.filter((p) => p.state === 'done').length
+  const prayersLate = day.prayers.filter((p) => p.state === 'late').length
   const applicable = day.habits.filter((h) => h.applies)
   // A grace day can be spent on today or yesterday — a break is usually noticed
   // the next morning, which is the case that actually matters.
@@ -65,7 +67,15 @@ export default function DayDetailPage({ date }: { date: DateStr }): React.JSX.El
   }
 
   const components: Array<{ label: string; value: number; max: number; basis: string }> = [
-    { label: 'Prayers', value: day.score.prayers, max: 40, basis: `${prayersDone} of 5 prayed` },
+    {
+      label: 'Prayers',
+      value: day.score.prayers,
+      max: 40,
+      basis:
+        prayersLate > 0
+          ? `${prayersDone} of 5 in time, ${prayersLate} made up`
+          : `${prayersDone} of 5 prayed`
+    },
     {
       label: 'Habits',
       value: day.score.habits,
@@ -115,7 +125,9 @@ export default function DayDetailPage({ date }: { date: DateStr }): React.JSX.El
             : day.isToday
               ? 'Today · editable'
               : day.isPast
-                ? 'Past day · read only except the note'
+                ? day.prayers.some((p) => p.canMakeUp)
+                  ? 'Past day · note and make-ups only'
+                  : 'Past day · read only except the note'
                 : 'Upcoming'}
         </span>
       </div>
@@ -182,11 +194,13 @@ export default function DayDetailPage({ date }: { date: DateStr }): React.JSX.El
                         ? 'border-line-strong'
                         : s.state === 'done'
                           ? 'bg-done border-done'
-                          : s.state === 'missed'
-                            ? 'border-missed'
-                            : s.state === 'open'
-                              ? 'border-accent'
-                              : 'border-line-strong'
+                          : s.state === 'late'
+                            ? 'border-late'
+                            : s.state === 'missed'
+                              ? 'border-missed'
+                              : s.state === 'open'
+                                ? 'border-accent'
+                                : 'border-line-strong'
                     }`}
                   />
                   <span className="w-[72px] shrink-0">{PRAYER_LABELS[s.prayer]}</span>
@@ -199,21 +213,49 @@ export default function DayDetailPage({ date }: { date: DateStr }): React.JSX.El
                         ? 'text-faint'
                         : s.state === 'done'
                           ? 'text-done'
-                          : s.state === 'missed'
-                            ? 'text-missed'
-                            : 'text-faint'
+                          : s.state === 'late'
+                            ? 'text-late'
+                            : s.state === 'missed'
+                              ? 'text-missed'
+                              : 'text-faint'
                     }`}
                   >
                     {!day.tracked
                       ? 'Not tracked'
                       : s.state === 'done'
                         ? `logged ${formatClock(s.doneAt, tz)}`
-                        : s.state === 'missed'
-                          ? 'MISSED'
-                          : s.state === 'open'
-                            ? 'OPEN'
-                            : 'UPCOMING'}
+                        : s.state === 'late'
+                          ? `made up ${formatClock(s.doneAt, tz)}`
+                          : s.state === 'missed'
+                            ? 'MISSED'
+                            : s.state === 'open'
+                              ? 'OPEN'
+                              : 'UPCOMING'}
                   </span>
+                  {/* The one thing a past day still allows. Yesterday's Isha is
+                      only reachable here, because Today has moved on. */}
+                  {day.tracked && s.canMakeUp && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title={
+                        s.state === 'late'
+                          ? 'Withdraw this make-up'
+                          : 'Record this as prayed after its window closed'
+                      }
+                      onClick={() =>
+                        void action
+                          .run(() =>
+                            s.state === 'late'
+                              ? api.uncheckPrayer(day.date, s.prayer)
+                              : api.checkPrayer(day.date, s.prayer)
+                          )
+                          .then(reload)
+                      }
+                    >
+                      {s.state === 'late' ? 'Undo' : 'Make up'}
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>

@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { useAction, useAsync } from '../lib/hooks'
 import { Button, Field, Note, Panel, Toggle } from '../components/ui'
 import { SyncPanel } from '../components/sync'
+import { UpdatePanel } from '../components/update'
 
 export default function SettingsPage(): React.JSX.Element {
   const { data: stored, reload } = useAsync(() => api.getSettings(), [])
@@ -76,7 +77,9 @@ export default function SettingsPage(): React.JSX.Element {
       )}
       {result && <Note>{result}</Note>}
 
-      <SyncPanel platform={info?.platform ?? ""} />
+      <SyncPanel platform={info?.platform ?? ''} />
+
+      <UpdatePanel version={info?.version ?? '—'} platform={info?.platform ?? ''} />
 
       <Panel title="Location and calculation">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

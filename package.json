@@ -1,7 +1,7 @@
 {
   "name": "better",
   "productName": "Better",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Personal discipline and life tracking. Fully offline, fully local.",
   "main": "./out/main/index.js",
   "author": "ahmedbm068",
@@ -18,7 +18,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "icons": "node scripts/gen-icons.mjs",
-    "dist": "npm run build && electron-builder --win",
+    "dist": "npm run build && electron-builder --win --publish never",
+    "release": "npm run build && electron-builder --win --publish always",
     "dist:dir": "npm run build && electron-builder --win --dir",
     "postinstall": "node scripts/gen-icons.mjs && electron-builder install-app-deps",
     "smoke": "esbuild tests/smoke.ts --bundle --platform=node --format=cjs --target=node20 --external:electron --external:better-sqlite3 --alias:@shared=./src/shared --alias:@main=./src/main --outfile=out/smoke.cjs && electron out/smoke.cjs",
@@ -29,6 +30,7 @@
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",
+    "electron-updater": "^6.8.9",
     "sql.js": "^1.14.2"
   },
   "devDependencies": {

@@ -32,6 +32,7 @@ import type { IdentityProvider } from '../server/src/auth'
 import { push, pull } from '../server/src/changes'
 import type { SyncRows } from '../src/shared/sync'
 import { uuidv7 } from '../src/shared/uid'
+import { MAKEUP_WINDOW_MS } from '../src/shared/prayer'
 
 let passed = 0
 let failed = 0
@@ -272,35 +273,50 @@ async function main(): Promise<void> {
     section('a prayer mark is judged against the window')
     await push(sql, user.id, { prayer_times: [timesRow('2026-08-02', now + 86400000)] }, now)
 
-    const outside = await push(
+    // Windows for 2026-08-01, from timesRow: fajr [0h, 1.5h), dhuhr [6h, 9h),
+    // asr [9h, 12h), maghrib [12h, 13h) — all relative to `now`.
+    const H = 3600000
+    const mark = (prayer: string, doneAt: number): Record<string, SqlValue> => ({
+      date: '2026-08-01',
+      prayer,
+      done_at: doneAt,
+      updated_at: now,
+      deleted_at: null
+    })
+
+    // One push, four independent keys, so each verdict stands on its own rather
+    // than on whichever push happened to land last.
+    const judged = await push(
       sql,
       user.id,
       {
         prayer_marks: [
-          // Well after sunrise, so the Fajr window had closed.
-          { date: '2026-08-01', prayer: 'fajr', done_at: now + 5 * 3600000, updated_at: now, deleted_at: null }
+          mark('fajr', now + 5 * H), // closed 3.5h ago: a make-up, still allowed
+          mark('dhuhr', now + 9 * H + MAKEUP_WINDOW_MS + H), // long past the limit
+          mark('asr', now + 8 * H), // an hour before that window opened
+          mark('maghrib', now + 12.5 * H) // squarely inside its window
         ]
       },
       now
-    )
-    check('a mark outside its window is rejected', outside.rejected.length === 1)
-    check(
-      'and the reason says so',
-      outside.rejected[0]?.reason.includes('window'),
-      outside.rejected[0]?.reason
     )
 
-    const inside = await push(
-      sql,
-      user.id,
-      {
-        prayer_marks: [
-          { date: '2026-08-01', prayer: 'fajr', done_at: now + 60000, updated_at: now, deleted_at: null }
-        ]
-      },
-      now
+    const reasonFor = (key: string): string =>
+      judged.rejected.find((r) => r.key.includes(key))?.reason ?? ''
+
+    check('a make-up soon after the window is accepted', judged.accepted === 2)
+    check('a mark far past the make-up limit is rejected', reasonFor('dhuhr').length > 0)
+    check(
+      'and the reason names the make-up, not the window',
+      reasonFor('dhuhr').includes('made up'),
+      reasonFor('dhuhr')
     )
-    check('a mark inside its window is accepted', inside.accepted === 1)
+    check('a mark from before the window opened is rejected', reasonFor('asr').length > 0)
+    check(
+      'and that reason says the window had not opened',
+      reasonFor('asr').includes('had not opened'),
+      reasonFor('asr')
+    )
+    check('exactly the two bad marks were refused', judged.rejected.length === 2)
 
     const unknownDay = await push(
       sql,

@@ -2,7 +2,7 @@
  * The day: assembling a full snapshot, and the guarded mutations that change it.
  *
  * Guard rules, in one place:
- *   - prayers : checkable only inside their own window, ever
+ *   - prayers : on time only inside the window; made up for a short while after
  *   - habits  : the current logical day only (grace also covers yesterday)
  *   - avoid   : the current logical day only
  *   - sleep   : editable after the fact, since the buttons get forgotten
@@ -21,7 +21,16 @@ import type {
   SleepSession
 } from '@shared/types'
 import { logicalDate } from '@shared/day'
-import { dayStatuses, isCheckable, isPerfectDay, windowFor } from '@shared/prayer'
+import {
+  MAKEUP_WINDOW_MS,
+  countDone,
+  countLate,
+  dayStatuses,
+  isCheckable,
+  isPerfectDay,
+  isRecordable,
+  windowFor
+} from '@shared/prayer'
 import { computeScore, emptyScore } from '@shared/score'
 import { appliesOnWeekday } from '@shared/streaks'
 import {
@@ -106,7 +115,17 @@ export function getPrayerStatuses(
   return dayStatuses(getDayTimes(date, settings), now, prayersRepo.getMarks(date))
 }
 
-/** Checks a prayer off. Refuses outside the window — this is the core rule. */
+/** How the make-up limit reads in a refusal, without hardcoding the number. */
+const MAKEUP_DAYS = Math.round(MAKEUP_WINDOW_MS / 86_400_000)
+
+/**
+ * Records a prayer.
+ *
+ * Inside its window this is an ordinary check, done in time. After it, and for
+ * as long as the make-up window allows, the mark is still written but comes
+ * back as `late` — see `statusFor`, which reads that off the time itself. There
+ * is no argument here that turns a make-up into an on-time prayer.
+ */
 export function checkPrayer(
   date: DateStr,
   prayer: PrayerName,
@@ -114,18 +133,24 @@ export function checkPrayer(
 ): PrayerStatus[] {
   const settings = readSettings()
   const window = windowFor(getDayTimes(date, settings), prayer)
-  if (!isCheckable(window, now)) {
+  if (!isRecordable(window, now)) {
     throw new GuardError(
       now < window.start
         ? 'That prayer window has not opened yet.'
-        : 'That window has closed. Missed prayers stay missed.'
+        : `That window closed more than ${MAKEUP_DAYS} days ago. The record for it is final.`
     )
   }
   prayersRepo.setMark(date, prayer, now)
   return getPrayerStatuses(date, now, settings)
 }
 
-/** Undoes a mis-tap. Only while the window is still open. */
+/**
+ * Undoes a mis-tap.
+ *
+ * Two separate permissions, not one. While the window is open anything may be
+ * withdrawn. Once it has closed, only a *make-up* may be — an on-time prayer
+ * becomes part of the record the moment its window ends, and stays there.
+ */
 export function uncheckPrayer(
   date: DateStr,
   prayer: PrayerName,
@@ -133,7 +158,11 @@ export function uncheckPrayer(
 ): PrayerStatus[] {
   const settings = readSettings()
   const window = windowFor(getDayTimes(date, settings), prayer)
-  if (!isCheckable(window, now)) {
+  const status = getPrayerStatuses(date, now, settings).find((s) => s.prayer === prayer)
+
+  const allowed =
+    isCheckable(window, now) || (status?.state === 'late' && status.canMakeUp)
+  if (!allowed) {
     throw new GuardError('That window has closed. The record for it is final.')
   }
   prayersRepo.clearMark(date, prayer)
@@ -231,7 +260,8 @@ export function scoreFor(
   const avoidClean = items.filter((i) => avoidLogs.get(i.id)?.status !== 'slip').length
 
   return computeScore({
-    prayersDone: statuses.filter((s) => s.state === 'done').length,
+    prayersDone: countDone(statuses),
+    prayersLate: countLate(statuses),
     habitsApplicable: applicable.length,
     habitsDone,
     avoidActive: items.length,

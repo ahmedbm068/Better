@@ -18,7 +18,8 @@ import type {
   FileResult,
   ImHimApi,
   SyncReport,
-  SyncStatus
+  SyncStatus,
+  UpdateStatus
 } from '@shared/api'
 import type {
   AvoidStatus,
@@ -427,6 +428,20 @@ export function createWebApi(deps: WebApiDeps): ImHimApi {
       // A web page cannot start with the machine. The setting stays off, and
       // the UI reads this back rather than assuming it took.
       return false
+    },
+
+    // ---- updates ----------------------------------------------------------
+    // A tab is always on the newest version already: a reload is the update.
+    // The panel reads `supported` and says so rather than offering a button
+    // that would do nothing.
+    async updateStatus(): Promise<UpdateStatus> {
+      return { state: 'current', version: null, percent: 0, message: null, supported: false }
+    },
+    async checkForUpdate(): Promise<UpdateStatus> {
+      return { state: 'current', version: null, percent: 0, message: null, supported: false }
+    },
+    async installUpdate() {
+      // Nothing to install.
     },
 
     // ---- sync -------------------------------------------------------------

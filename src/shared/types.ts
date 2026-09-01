@@ -17,7 +17,13 @@ export type DateStr = string
 /** Epoch milliseconds. */
 export type Millis = number
 
-export type PrayerState = 'upcoming' | 'open' | 'done' | 'missed'
+/**
+ * `done` means prayed inside its own window. `late` means prayed after it
+ * closed — a make-up, which counts as prayed but never as on time. The two are
+ * kept apart everywhere, because collapsing them would let a bad day be tidied
+ * up after the fact.
+ */
+export type PrayerState = 'upcoming' | 'open' | 'done' | 'missed' | 'late'
 
 /** The six adhan instants that bound the five prayer windows. */
 export interface DayPrayerTimes {
@@ -49,6 +55,12 @@ export interface PrayerStatus {
   doneAt: Millis | null
   /** ms until the window closes; negative once closed. */
   msLeft: number
+  /**
+   * The make-up window is still open: a missed prayer can still be recorded
+   * late, and a late one undone. False while the window itself is open — that
+   * is an ordinary check — and false once the make-up window has passed too.
+   */
+  canMakeUp: boolean
 }
 
 export const CALC_METHODS = ['MuslimWorldLeague', 'UmmAlQura', 'Egyptian', 'Karachi'] as const
@@ -229,8 +241,10 @@ export interface WeekStats {
   weekStart: DateStr
   weekEnd: DateStr
   avgScore: number
+  /** On-time prayers over possible. Make-ups are excluded on purpose. */
   prayerRate: number
   prayersDone: number
+  prayersLate: number
   prayersPossible: number
   focusedHours: number
   avgSleepHours: number
@@ -249,11 +263,14 @@ export interface CalendarDay {
   score: number
   hasSlip: boolean
   hasGrace: boolean
-  /** All five prayers done in time — earns the mihrab mark. */
+  /** All five prayers done in time — earns the mihrab mark. Make-ups do not. */
   allPrayers: boolean
   /** The pinned quit item had no slip — earns the smoke-free mark. */
   quitClean: boolean
+  /** Prayed inside the window. */
   prayersDone: number
+  /** Prayed after the window closed. Never folded into `prayersDone`. */
+  prayersLate: number
   workSeconds: number
   note: string | null
 }

@@ -9,7 +9,7 @@ import type { ChangeSet, SyncRow, SyncRows, SyncTable, SyncTableSpec } from '@sh
 import { SYNC_TABLES, SYNC_TABLE_BY_NAME, incomingWins } from '@shared/sync'
 import type { DayPrayerTimes, Millis, PrayerName } from '@shared/types'
 import { PRAYERS } from '@shared/types'
-import { windowFor, isCheckable } from '@shared/prayer'
+import { windowFor, isRecordable } from '@shared/prayer'
 import { addDays } from '@shared/time'
 import type { Sql, SqlValue, Statement } from './db'
 import { stmt } from './db'
@@ -269,14 +269,19 @@ class PrayerTimeLookup {
 }
 
 /**
- * Refuses a prayer mark whose claimed time falls outside its own window.
+ * Refuses a prayer mark whose claimed time falls outside what the rules allow.
  *
- * Worth being exact about what this does and does not do. It catches a broken
- * client, a mark for a window that had already closed, and a mark for a day the
- * device never had times for. It does not make the guard tamper-proof: an
+ * The window itself, plus the make-up period after it — the server has to
+ * accept both, or a qada recorded on one device would be rejected on sync and
+ * silently vanish. It still refuses a mark before the window opened, one from
+ * long after it closed, and one for a day the device never had times for.
+ *
+ * Worth being exact about what this does not do: it is not tamper-proof. An
  * offline device supplies its own `done_at`, so a client that lies about when
  * it prayed will be believed. Only a mark made while online is witnessed by
- * this server at the moment it happens.
+ * this server at the moment it happens. Note also that the server checks the
+ * bound, not the resulting state — whether a mark reads as done or late is
+ * derived from the same times on every client, so there is nothing to agree on.
  */
 async function checkPrayerMark(row: SyncRow, times: PrayerTimeLookup): Promise<string | null> {
   const prayer = String(row.prayer) as PrayerName
@@ -303,7 +308,8 @@ async function checkPrayerMark(row: SyncRow, times: PrayerTimeLookup): Promise<s
   }
 
   const doneAt = Number(row.done_at ?? 0)
-  return isCheckable(windowFor(dayTimes, prayer), doneAt)
-    ? null
-    : 'that prayer window was not open at the time claimed'
+  const window = windowFor(dayTimes, prayer)
+  if (doneAt < window.start) return 'that prayer window had not opened at the time claimed'
+  if (!isRecordable(window, doneAt)) return 'that prayer was made up too long after its window closed'
+  return null
 }

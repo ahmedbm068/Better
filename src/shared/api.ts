@@ -81,6 +81,7 @@ export interface CalendarDay {
   allPrayers: boolean
   quitClean: boolean
   prayersDone: number
+  prayersLate: number
   workSeconds: number
   note: string | null
 }
@@ -124,6 +125,7 @@ export interface StatsResult {
     date: DateStr
     score: number
     prayersDone: number
+    prayersLate: number
     habitsDone: number
     habitsApplicable: number
     habitRatio: number | null
@@ -152,6 +154,7 @@ export interface StatsResult {
     daysTracked: number
     avgScore: number
     prayersDone: number
+    prayersLate: number
     prayersPossible: number
     focusedHours: number
   }
@@ -189,6 +192,28 @@ export interface SyncReport {
   error: string | null
 }
 
+/**
+ * Where the app is in the update cycle.
+ *
+ * `current` is a positive answer — checked, and there is nothing newer — while
+ * `idle` means nothing has been checked yet, or this build does not update at
+ * all. The UI needs to tell those apart to avoid claiming you are up to date
+ * when nobody has looked.
+ */
+export type UpdateState = 'idle' | 'checking' | 'current' | 'available' | 'ready' | 'error'
+
+export interface UpdateStatus {
+  state: UpdateState
+  /** The newer version, once one is known. */
+  version: string | null
+  /** 0..100 while downloading. */
+  percent: number
+  /** Why the last check failed, if it did. */
+  message: string | null
+  /** False in the browser and in development, where there is nothing to update. */
+  supported: boolean
+}
+
 export type AppEvent =
   | 'tick'
   | 'day:rollover'
@@ -197,6 +222,7 @@ export type AppEvent =
   | 'navigate'
   | 'data:changed'
   | 'sync:changed'
+  | 'update:changed'
 
 export interface ImHimApi {
   getInfo(): Promise<AppInfo>
@@ -297,6 +323,13 @@ export interface ImHimApi {
   signOut(): Promise<SyncStatus>
   syncNow(): Promise<SyncReport>
   syncStatus(): Promise<SyncStatus>
+
+  /** What the updater knows right now, without asking the network. */
+  updateStatus(): Promise<UpdateStatus>
+  /** Asks GitHub whether a newer version exists. Downloads it if so. */
+  checkForUpdate(): Promise<UpdateStatus>
+  /** Quits and installs an update that has finished downloading. */
+  installUpdate(): Promise<void>
 
   /** Subscribes to a main-process event. Returns an unsubscribe function. */
   on(event: AppEvent, handler: (payload: unknown) => void): () => void

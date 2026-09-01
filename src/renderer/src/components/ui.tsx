@@ -143,13 +143,16 @@ export function Stepper({
   )
 }
 
-export type CheckState = 'done' | 'open' | 'missed' | 'grace' | 'upcoming'
+export type CheckState = 'done' | 'late' | 'open' | 'missed' | 'grace' | 'upcoming'
 
 /**
  * The checkbox.
  *
  * A grace day is never a checkmark and never green — it is its own state, so it
  * cannot be mistaken for having done the thing.
+ *
+ * A late prayer does get a checkmark, because it was prayed, but a hollow one
+ * in its own colour: the shape says done, the fill says not on time.
  */
 export function CheckBox({
   state,
@@ -164,6 +167,7 @@ export function CheckBox({
 }): React.JSX.Element {
   const styles: Record<CheckState, string> = {
     done: 'bg-done border-done',
+    late: 'bg-transparent border-late',
     open: 'bg-transparent border-accent',
     missed: 'bg-transparent border-missed',
     grace: 'bg-transparent border-grace',
@@ -174,7 +178,7 @@ export function CheckBox({
     <button
       type="button"
       role="checkbox"
-      aria-checked={state === 'done'}
+      aria-checked={state === 'done' || state === 'late'}
       aria-label={label}
       disabled={inert}
       onClick={onToggle}
@@ -183,6 +187,17 @@ export function CheckBox({
     >
       {state === 'done' && (
         <svg viewBox="0 0 16 16" className="w-full h-full text-panel" aria-hidden="true">
+          <path
+            d="M3.5 8.2l3 3L12.5 5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="square"
+          />
+        </svg>
+      )}
+      {state === 'late' && (
+        <svg viewBox="0 0 16 16" className="w-full h-full text-late" aria-hidden="true">
           <path
             d="M3.5 8.2l3 3L12.5 5"
             fill="none"
@@ -237,7 +252,11 @@ export function CheckRow({
             {label}
           </button>
         ) : (
-          <div className={`truncate ${state === 'done' ? 'text-dim' : ''}`}>{label}</div>
+          <div
+            className={`truncate ${state === 'done' || state === 'late' ? 'text-dim' : ''}`}
+          >
+            {label}
+          </div>
         )}
         {sub && <div className="quiet truncate mt-0.5">{sub}</div>}
       </div>

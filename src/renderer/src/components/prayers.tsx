@@ -6,6 +6,7 @@ import { Button } from './ui'
 
 export const STATE_COLOR: Record<PrayerState, string> = {
   done: 'bg-done',
+  late: 'bg-late',
   missed: 'bg-missed',
   open: 'bg-accent',
   upcoming: 'bg-wait'
@@ -13,6 +14,7 @@ export const STATE_COLOR: Record<PrayerState, string> = {
 
 const STATE_TEXT: Record<PrayerState, string> = {
   done: 'text-done',
+  late: 'text-late',
   missed: 'text-missed',
   open: 'text-accent',
   upcoming: 'text-faint'
@@ -154,7 +156,10 @@ export function PrayerList({
   return (
     <ul className="divide-y divide-line">
       {statuses.map((s) => {
-        const checkable = !readOnly && !untracked && now >= s.start && now < s.end
+        const live = !readOnly && !untracked
+        const inWindow = live && now >= s.start && now < s.end
+        // The window has closed but the prayer can still be recorded as made up.
+        const makeUp = live && s.canMakeUp
         return (
           <li key={s.prayer} className="flex items-center gap-3 py-2 first:pt-0 last:pb-0">
             <span
@@ -169,16 +174,26 @@ export function PrayerList({
             >
               {untracked && 'not tracked'}
               {!untracked && s.state === 'done' && `checked ${formatClock(s.doneAt, tz)}`}
+              {!untracked && s.state === 'late' && `made up ${formatClock(s.doneAt, tz)}`}
               {!untracked && s.state === 'missed' && 'missed'}
               {!untracked && s.state === 'open' && `${formatDurationShort(s.end - now)} left`}
               {!untracked && s.state === 'upcoming' && `until ${formatClock(s.end, tz)}`}
             </span>
-            {checkable && s.state !== 'done' && (
+            {inWindow && s.state !== 'done' && (
               <Button size="sm" onClick={() => onCheck?.(s)}>
                 Check
               </Button>
             )}
-            {checkable && s.state === 'done' && (
+            {makeUp && s.state === 'missed' && (
+              <Button
+                size="sm"
+                onClick={() => onCheck?.(s)}
+                title="Record this as prayed after its window closed"
+              >
+                Made up
+              </Button>
+            )}
+            {((inWindow && s.state === 'done') || (makeUp && s.state === 'late')) && (
               <Button size="sm" variant="ghost" onClick={() => onUncheck?.(s)} title="Undo">
                 Undo
               </Button>

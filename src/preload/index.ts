@@ -21,7 +21,8 @@ const ALLOWED_EVENTS: readonly AppEvent[] = [
   'review:due',
   'navigate',
   'data:changed',
-  'sync:changed'
+  'sync:changed',
+  'update:changed'
 ]
 
 const api = {
@@ -96,6 +97,10 @@ const api = {
   signOut: call('signOut'),
   syncNow: call('syncNow'),
   syncStatus: call('syncStatus'),
+
+  updateStatus: call('updateStatus'),
+  checkForUpdate: call('checkForUpdate'),
+  installUpdate: call('installUpdate'),
 
   on(event: AppEvent, handler: (payload: unknown) => void): () => void {
     if (!ALLOWED_EVENTS.includes(event)) return () => {}

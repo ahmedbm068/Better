@@ -102,6 +102,7 @@ function StatusStrip({
   stats: StatsResult | null
 }): React.JSX.Element {
   const prayersDone = day.prayers.filter((p) => p.state === 'done').length
+  const prayersLate = day.prayers.filter((p) => p.state === 'late').length
   const applicable = day.habits.filter((h) => h.applies)
   const habitsDone = applicable.filter((h) => h.done).length
   const clean = day.avoid.filter((a) => a.status !== 'slip').length
@@ -119,7 +120,10 @@ function StatusStrip({
       <div className="w-px h-5 bg-line" />
 
       <div className="flex items-center gap-5 min-w-0 overflow-hidden">
-        <Counter label="Prayers" value={`${prayersDone}/5`} />
+        <Counter
+          label={prayersLate > 0 ? `Prayers · ${prayersLate} late` : 'Prayers'}
+          value={`${prayersDone + prayersLate}/5`}
+        />
         <Counter label="Habits" value={`${habitsDone}/${applicable.length}`} />
         <Counter label="Clean" value={`${clean}/${day.avoid.length}`} />
         <Counter label="Grace left" value={`${graceLeft}/${day.habits.length}`} />
@@ -251,11 +255,13 @@ function DayRail({
   const bandColor = (s: PrayerStatus): string =>
     s.state === 'done'
       ? 'var(--done)'
-      : s.state === 'missed'
-        ? 'var(--missed)'
-        : s.state === 'open'
-          ? 'var(--accent)'
-          : 'var(--wait)'
+      : s.state === 'late'
+        ? 'var(--late)'
+        : s.state === 'missed'
+          ? 'var(--missed)'
+          : s.state === 'open'
+            ? 'var(--accent)'
+            : 'var(--wait)'
 
   return (
     <div className="flex-1 min-w-0 px-6 pt-4 pb-[18px]">
@@ -311,9 +317,11 @@ function DayRail({
             ? 'text-accent'
             : s.state === 'done'
               ? 'text-done'
-              : s.state === 'missed'
-                ? 'text-missed'
-                : 'text-dim'
+              : s.state === 'late'
+                ? 'text-late'
+                : s.state === 'missed'
+                  ? 'text-missed'
+                  : 'text-dim'
           return (
             <span
               key={s.prayer}
@@ -377,6 +385,7 @@ function Checklist({
 
   const applicable = day.habits.filter((h) => h.applies)
   const prayersDone = day.prayers.filter((p) => p.state === 'done').length
+  const prayersLate = day.prayers.filter((p) => p.state === 'late').length
   const clean = day.avoid.filter((a) => a.status !== 'slip').length
 
   const logSlip = (): void => {
@@ -404,22 +413,31 @@ function Checklist({
       right={<span className="num text-[11px] text-faint">{day.date}</span>}
     >
       <div className="px-4 pt-3 pb-1.5">
-        <Kicker right={<span className="num text-[11px] text-faint">{prayersDone}/5</span>}>
+        <Kicker
+          right={
+            <span className="num text-[11px] text-faint">
+              {prayersDone + prayersLate}/5{prayersLate > 0 && ` · ${prayersLate} late`}
+            </span>
+          }
+        >
           Prayers
         </Kicker>
       </div>
       <div>
         {day.prayers.map((s) => {
           const isOpen = now >= s.start && now < s.end
+          // Closed, but still inside the make-up window: the row stays live so
+          // a missed prayer can be recorded as prayed, and undone if mis-tapped.
+          const editable = isOpen || s.canMakeUp
           return (
             <CheckRow
               key={s.prayer}
               state={s.state}
               onToggle={
-                isOpen
+                editable
                   ? () =>
                       run(() =>
-                        s.state === 'done'
+                        s.state === 'done' || s.state === 'late'
                           ? api.uncheckPrayer(day.date, s.prayer)
                           : api.checkPrayer(day.date, s.prayer)
                       )
@@ -436,18 +454,31 @@ function Checklist({
                       />
                     </span>
                   )}
+                  {s.state === 'missed' && s.canMakeUp && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Record this as prayed after its window closed"
+                      onClick={() => run(() => api.checkPrayer(day.date, s.prayer))}
+                    >
+                      Make up
+                    </Button>
+                  )}
                   <span
                     className={`num text-[11px] w-[104px] text-right ${
                       s.state === 'missed'
                         ? 'text-missed'
                         : s.state === 'done'
                           ? 'text-done'
-                          : s.state === 'open'
-                            ? 'text-accent'
-                            : 'text-faint'
+                          : s.state === 'late'
+                            ? 'text-late'
+                            : s.state === 'open'
+                              ? 'text-accent'
+                              : 'text-faint'
                     }`}
                   >
                     {s.state === 'done' && `logged ${formatClock(s.doneAt, settings.timezone)}`}
+                    {s.state === 'late' && `made up ${formatClock(s.doneAt, settings.timezone)}`}
                     {s.state === 'missed' && 'MISSED'}
                     {s.state === 'open' && `${formatDurationShort(s.end - now)} left`}
                     {s.state === 'upcoming' && formatClock(s.start, settings.timezone)}
@@ -618,6 +649,13 @@ function Detail({ label, value }: { label: string; value: string }): React.JSX.E
 
 /* ------------------------------------------------------------------ tier 4 */
 
+/** "3 of 5 in time", plus the make-ups when there are any. */
+function prayerBasis(day: DaySnapshot): string {
+  const done = day.prayers.filter((p) => p.state === 'done').length
+  const late = day.prayers.filter((p) => p.state === 'late').length
+  return late > 0 ? `${done} of 5 in time, ${late} made up` : `${done} of 5 prayed`
+}
+
 function ScoreBreakdown({ day }: { day: DaySnapshot }): React.JSX.Element {
   const applicable = day.habits.filter((h) => h.applies)
   const parts: Array<{ label: string; value: number; max: number; basis: string }> = [
@@ -625,7 +663,7 @@ function ScoreBreakdown({ day }: { day: DaySnapshot }): React.JSX.Element {
       label: 'Prayers',
       value: day.score.prayers,
       max: 40,
-      basis: `${day.prayers.filter((p) => p.state === 'done').length} of 5 prayed`
+      basis: prayerBasis(day)
     },
     {
       label: 'Habits',

@@ -1,8 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { computeScore, SCORE_WEIGHTS } from '@shared/score'
+import {
+  computeScore,
+  SCORE_WEIGHTS,
+  POINTS_PER_PRAYER,
+  POINTS_PER_LATE_PRAYER
+} from '@shared/score'
 
 const input = {
   prayersDone: 0,
+  prayersLate: 0,
   habitsApplicable: 0,
   habitsDone: 0,
   avoidActive: 0,
@@ -15,6 +21,7 @@ describe('computeScore', () => {
   it('gives a perfect day exactly 100', () => {
     const s = computeScore({
       prayersDone: 5,
+      prayersLate: 0,
       habitsApplicable: 6,
       habitsDone: 6,
       avoidActive: 4,
@@ -59,6 +66,7 @@ describe('computeScore', () => {
   it('produces the documented 3/5-prayer example', () => {
     const s = computeScore({
       prayersDone: 3,
+      prayersLate: 0,
       habitsApplicable: 6,
       habitsDone: 4,
       avoidActive: 4,
@@ -69,21 +77,59 @@ describe('computeScore', () => {
     expect(s.total).toBe(24 + 17 + 20 + 0 + 5)
   })
 
-  it('never exceeds 100 for any combination', () => {
+  it('never exceeds 100 for any combination, make-ups included', () => {
     for (let p = 0; p <= 5; p++) {
-      for (let h = 0; h <= 6; h++) {
-        const s = computeScore({
-          prayersDone: p,
-          habitsApplicable: 6,
-          habitsDone: h,
-          avoidActive: 4,
-          avoidClean: 4,
-          sleepOnTarget: true,
-          hasWorkSession: true
-        })
-        expect(s.total).toBeLessThanOrEqual(100)
-        expect(s.total).toBeGreaterThanOrEqual(0)
+      for (let late = 0; late <= 5; late++) {
+        for (let h = 0; h <= 6; h++) {
+          const s = computeScore({
+            prayersDone: p,
+            prayersLate: late,
+            habitsApplicable: 6,
+            habitsDone: h,
+            avoidActive: 4,
+            avoidClean: 4,
+            sleepOnTarget: true,
+            hasWorkSession: true
+          })
+          expect(s.total).toBeLessThanOrEqual(100)
+          expect(s.total).toBeGreaterThanOrEqual(0)
+        }
       }
     }
+  })
+})
+
+describe('made-up prayers', () => {
+  it('earns a made-up prayer less than one prayed in time', () => {
+    const late = computeScore({ ...input, prayersLate: 1 }).prayers
+    const onTime = computeScore({ ...input, prayersDone: 1 }).prayers
+    expect(late).toBe(POINTS_PER_LATE_PRAYER)
+    expect(onTime).toBe(POINTS_PER_PRAYER)
+    expect(late).toBeLessThan(onTime)
+  })
+
+  it('earns more than abandoning the prayer', () => {
+    expect(computeScore({ ...input, prayersLate: 1 }).prayers).toBeGreaterThan(
+      computeScore(input).prayers
+    )
+  })
+
+  it('never lets five made up match five kept', () => {
+    const allLate = computeScore({ ...input, prayersLate: 5 }).prayers
+    const allDone = computeScore({ ...input, prayersDone: 5 }).prayers
+    expect(allLate).toBe(5 * POINTS_PER_LATE_PRAYER)
+    expect(allLate).toBeLessThan(allDone)
+  })
+
+  it('adds on-time and made-up prayers together', () => {
+    expect(computeScore({ ...input, prayersDone: 3, prayersLate: 2 }).prayers).toBe(
+      3 * POINTS_PER_PRAYER + 2 * POINTS_PER_LATE_PRAYER
+    )
+  })
+
+  it('caps the category even if both counts are impossibly high', () => {
+    expect(computeScore({ ...input, prayersDone: 5, prayersLate: 5 }).prayers).toBe(
+      SCORE_WEIGHTS.prayers
+    )
   })
 })

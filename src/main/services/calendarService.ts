@@ -49,6 +49,7 @@ function buildRange(from: DateStr, to: DateStr, now: Millis): CalendarDay[] {
     const show = tracked && !inFuture
     const states = show ? getPrayerStatuses(date, now, settings).map((s) => s.state) : blank
     const prayersDone = show ? states.filter((x) => x === 'done').length : 0
+    const prayersLate = show ? states.filter((x) => x === 'late').length : 0
     return {
       date,
       inFuture,
@@ -60,6 +61,7 @@ function buildRange(from: DateStr, to: DateStr, now: Millis): CalendarDay[] {
       allPrayers: show && prayersDone === 5,
       quitClean: show && quitItem != null && !quitSlips.has(date),
       prayersDone,
+      prayersLate,
       workSeconds: workByDate.get(date) ?? 0,
       note: notes.get(date) ?? null
     }

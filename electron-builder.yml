@@ -27,3 +27,18 @@ nsis:
   shortcutName: Better
   deleteAppDataOnUninstall: false
 npmRebuild: true
+
+# Where the app looks for updates, and where `npm run dist` expects releases to
+# go. A public repo needs no token — the feed is just a file on the release.
+#
+# This also makes electron-builder write `latest.yml` next to the installer.
+# That file is the whole mechanism: the app reads the version and checksum out
+# of it, and a release published WITHOUT it updates nobody, with no error
+# anywhere. Upload both, every time.
+publish:
+  provider: github
+  owner: ahmedbm068
+  repo: Better
+  # Published, not a draft: the updater only ever sees live releases, so a
+  # draft would upload both files and still update nobody.
+  releaseType: release
