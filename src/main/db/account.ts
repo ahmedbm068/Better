@@ -14,12 +14,15 @@ export interface Account {
   server: string
   token: string
   userId: string
+  /** The address the account is keyed on. Absent on accounts made before it. */
+  email?: string | null
 }
 
 export interface SyncStatus {
   signedIn: boolean
   server: string | null
   userId: string | null
+  email: string | null
   /** When the last complete cycle finished, or null if none has. */
   lastSyncAt: number | null
   /** Why the last attempt failed, or null if it succeeded. */
@@ -46,13 +49,16 @@ export function getAccount(db: DatabaseType = getDb()): Account | null {
   const server = read('server', db)
   const token = read('token', db)
   const userId = read('user_id', db)
-  return server && token && userId ? { server, token, userId } : null
+  return server && token && userId
+    ? { server, token, userId, email: read('email', db) }
+    : null
 }
 
 export function setAccount(account: Account, db: DatabaseType = getDb()): void {
   write('server', account.server.replace(/\/+$/, ''), db)
   write('token', account.token, db)
   write('user_id', account.userId, db)
+  write('email', account.email ?? null, db)
   write('last_error', null, db)
 }
 
@@ -65,7 +71,15 @@ export function setAccount(account: Account, db: DatabaseType = getDb()): void {
  * next rather than being lost.
  */
 export function clearAccount(db: DatabaseType = getDb()): void {
-  for (const key of ['server', 'token', 'user_id', 'cursor', 'last_error', 'last_sync_at']) {
+  for (const key of [
+    'server',
+    'token',
+    'user_id',
+    'email',
+    'cursor',
+    'last_error',
+    'last_sync_at'
+  ]) {
     write(key, null, db)
   }
 }
@@ -86,6 +100,7 @@ export function readStatus(pending: boolean, db: DatabaseType = getDb()): SyncSt
     signedIn: account !== null,
     server: account?.server ?? null,
     userId: account?.userId ?? null,
+    email: account?.email ?? null,
     lastSyncAt: at === null ? null : Number(at),
     lastError: read('last_error', db),
     pending

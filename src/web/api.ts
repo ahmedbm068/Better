@@ -14,6 +14,7 @@
 import type {
   AppInfo,
   AppEvent,
+  AuthProvider,
   FileResult,
   ImHimApi,
   SyncReport,
@@ -50,6 +51,7 @@ import {
 } from '../main/services/bundle'
 import type { TableName } from '../main/services/bundle'
 import * as sync from '../main/services/syncService'
+import { loginWithPassword, putPassword } from '../main/services/syncClient'
 import { getAccount, clearAccount, setAccount } from '../main/db/account'
 
 /** Fires the events the renderer subscribes to. Locally, since there is no IPC. */
@@ -428,12 +430,32 @@ export function createWebApi(deps: WebApiDeps): ImHimApi {
     },
 
     // ---- sync -------------------------------------------------------------
-    async signIn(server: string): Promise<SyncStatus> {
+    async signIn(server: string, provider: AuthProvider): Promise<SyncStatus> {
       // The browser is already where OAuth belongs, so no loopback dance: the
       // server redirects back here with the token in the fragment, and `boot`
       // stores it before the app mounts.
-      location.href = `${server.replace(/\/+$/, '')}/auth/github/start`
+      location.href = `${server.replace(/\/+$/, '')}/auth/${provider}/start`
       return sync.status()
+    },
+
+    async signInWithPassword(
+      server: string,
+      email: string,
+      password: string
+    ): Promise<SyncStatus> {
+      const base = server.replace(/\/+$/, '')
+      const { token, user } = await loginWithPassword(base, email, password)
+      setAccount({ server: base, token, userId: user.id, email: user.email })
+      onWrite()
+      await sync.syncNow(changed)
+      syncChanged()
+      return sync.status()
+    },
+
+    async setPassword(password: string): Promise<void> {
+      const account = getAccount()
+      if (!account) throw new Error('Sign in first.')
+      await putPassword(account, password)
     },
 
     async signOut(): Promise<SyncStatus> {

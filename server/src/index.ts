@@ -106,6 +106,7 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
           const target = new URL(env.DESKTOP_CALLBACK_URL ?? DESKTOP_CALLBACK)
           target.searchParams.set('token', token)
           target.searchParams.set('user', user.id)
+          if (user.email) target.searchParams.set('email', user.email)
           return Response.redirect(target.toString(), 302)
         }
 
@@ -116,7 +117,9 @@ export async function handle(request: Request, env: Env, sql: Sql): Promise<Resp
         // The token rides in the fragment, which a browser never sends to a
         // server, so it stays out of every access log on the way.
         const app = env.APP_URL ?? url.origin
-        return Response.redirect(`${app}/#token=${token}&user=${user.id}`, 302)
+        const fragment = new URLSearchParams({ token, user: user.id })
+        if (user.email) fragment.set('email', user.email)
+        return Response.redirect(`${app}/#${fragment}`, 302)
       } catch (err) {
         if (err instanceof AuthError) return problem(err.message, 401)
         throw err

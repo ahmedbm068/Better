@@ -84,7 +84,7 @@ function claimToken(server: string): boolean {
   if (!token) return false
 
   const userId = fragment.get('user') ?? 'me'
-  setAccount({ server, token, userId })
+  setAccount({ server, token, userId, email: fragment.get('email') })
   history.replaceState(null, '', location.pathname + location.search)
   return true
 }

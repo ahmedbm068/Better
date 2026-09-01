@@ -22,7 +22,8 @@ import * as backup from './services/backupService'
 import { quitStats } from './services/quitService'
 import * as sync from './services/syncService'
 import { signIn } from './services/signIn'
-import { clearAccount } from './db/account'
+import { clearAccount, getAccount, setAccount } from './db/account'
+import { loginWithPassword, putPassword } from './services/syncClient'
 import * as habitsRepo from './db/repo/habits'
 import * as avoidRepo from './db/repo/avoid'
 import * as miscRepo from './db/repo/misc'
@@ -356,13 +357,27 @@ export function registerIpc(dependencies: IpcDeps): void {
   })
 
   // ---- sync ---------------------------------------------------------------
-  handle('signIn', async (server: string) => {
-    await signIn(server)
+  handle('signIn', async (server: string, provider: 'github' | 'google' = 'github') => {
+    await signIn(server, provider)
     // Straight into a first cycle, so the account is populated by the time the
     // user looks at it rather than at the next scheduled pass.
     await sync.syncNow(changed)
     deps.broadcast('sync:changed')
     return sync.status()
+  })
+
+  handle('signInWithPassword', async (server: string, email: string, password: string) => {
+    const { token, user } = await loginWithPassword(server, email, password)
+    setAccount({ server: server.replace(/\/+$/, ''), token, userId: user.id, email: user.email })
+    await sync.syncNow(changed)
+    deps.broadcast('sync:changed')
+    return sync.status()
+  })
+
+  handle('setPassword', async (password: string) => {
+    const account = getAccount()
+    if (!account) throw new Error('Sign in first.')
+    await putPassword(account, password)
   })
 
   handle('signOut', () => {

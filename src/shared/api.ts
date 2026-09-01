@@ -167,10 +167,15 @@ export interface FileResult {
 }
 
 /** Events pushed from main. */
+/** The providers an account can be created or reclaimed with. */
+export type AuthProvider = 'github' | 'google'
+
 export interface SyncStatus {
   signedIn: boolean
   server: string | null
   userId: string | null
+  /** The address the account is keyed on, once known. */
+  email: string | null
   lastSyncAt: Millis | null
   lastError: string | null
   /** Whether this device is holding changes the server has not seen. */
@@ -284,7 +289,11 @@ export interface ImHimApi {
   setLaunchOnStartup(enabled: boolean): Promise<boolean>
 
   /** Opens the browser to sign in, and resolves once the token comes back. */
-  signIn(server: string): Promise<SyncStatus>
+  signIn(server: string, provider: AuthProvider): Promise<SyncStatus>
+  /** Signs in directly, for someone who has set a password. */
+  signInWithPassword(server: string, email: string, password: string): Promise<SyncStatus>
+  /** Sets or replaces the password on the signed-in account. */
+  setPassword(password: string): Promise<void>
   signOut(): Promise<SyncStatus>
   syncNow(): Promise<SyncReport>
   syncStatus(): Promise<SyncStatus>

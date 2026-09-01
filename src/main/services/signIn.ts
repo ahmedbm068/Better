@@ -39,7 +39,10 @@ export class SignInError extends Error {}
  * Resolves when the browser has come back with a token. Rejects if the user
  * gives up, the provider refuses, or nothing arrives in time.
  */
-export function signIn(server: string): Promise<{ userId: string }> {
+export function signIn(
+  server: string,
+  provider: 'github' | 'google' = 'github'
+): Promise<{ userId: string }> {
   const base = server.replace(/\/+$/, '')
 
   return new Promise((resolve, reject) => {
@@ -69,6 +72,7 @@ export function signIn(server: string): Promise<{ userId: string }> {
 
       const token = url.searchParams.get('token')
       const userId = url.searchParams.get('user')
+      const email = url.searchParams.get('email')
       const error = url.searchParams.get('error')
 
       if (error || !token || !userId) {
@@ -78,7 +82,7 @@ export function signIn(server: string): Promise<{ userId: string }> {
         return
       }
 
-      setAccount({ server: base, token, userId })
+      setAccount({ server: base, token, userId, email })
       response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
       response.end(PAGE('Signed in. Better is now syncing.'))
       finish(() => resolve({ userId }))
@@ -95,7 +99,7 @@ export function signIn(server: string): Promise<{ userId: string }> {
     })
 
     listener.listen(CALLBACK_PORT, '127.0.0.1', () => {
-      void shell.openExternal(`${base}/auth/github/start?desktop=1`)
+      void shell.openExternal(`${base}/auth/${provider}/start?desktop=1`)
     })
   })
 }

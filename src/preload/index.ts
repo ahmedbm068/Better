@@ -91,6 +91,8 @@ const api = {
   setLaunchOnStartup: call('setLaunchOnStartup'),
 
   signIn: call('signIn'),
+  signInWithPassword: call('signInWithPassword'),
+  setPassword: call('setPassword'),
   signOut: call('signOut'),
   syncNow: call('syncNow'),
   syncStatus: call('syncStatus'),

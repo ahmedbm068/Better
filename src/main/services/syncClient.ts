@@ -38,6 +38,54 @@ export class SessionExpired extends Error {
 /** How long a single request may take before it is abandoned. */
 const TIMEOUT_MS = 20_000
 
+/**
+ * Signs in with an address and password, outside any session.
+ *
+ * Separate from the transport because it is what produces a session in the
+ * first place: there is no token to authorise it with.
+ */
+export async function loginWithPassword(
+  server: string,
+  email: string,
+  password: string,
+  fetchImpl = fetch
+): Promise<{ token: string; user: { id: string; email: string | null } }> {
+  const response = await fetchImpl(`${server.replace(/\/+$/, '')}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+  const body = (await response.json().catch(() => ({}))) as {
+    token?: string
+    user?: { id: string; email: string | null }
+    error?: string
+  }
+  if (!response.ok || !body.token || !body.user) {
+    throw new Error(body.error ?? 'Could not sign in.')
+  }
+  return { token: body.token, user: body.user }
+}
+
+/** Sets the password on the signed-in account. */
+export async function putPassword(
+  account: Account,
+  password: string,
+  fetchImpl = fetch
+): Promise<void> {
+  const response = await fetchImpl(`${account.server}/auth/password`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${account.token}`
+    },
+    body: JSON.stringify({ password })
+  })
+  if (!response.ok) {
+    const body = (await response.json().catch(() => ({}))) as { error?: string }
+    throw new Error(body.error ?? 'Could not set the password.')
+  }
+}
+
 export function httpTransport(account: Account, fetchImpl = fetch): SyncTransport {
   async function call<T>(path: string, init?: RequestInit): Promise<T> {
     const controller = new AbortController()

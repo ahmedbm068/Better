@@ -4,9 +4,14 @@
  * Deliberately plain about what it does and does not know. An account is
  * optional: signed out, the app is exactly what it has always been, and the
  * panel says so rather than nagging.
+ *
+ * Signing up always goes through a provider, so the address on an account is
+ * always one Google or GitHub has vouched for. A password can be added
+ * afterwards for signing in directly — and because the provider is still
+ * attached, forgetting it costs a provider sign-in rather than a reset email.
  */
 import { useCallback, useEffect, useState } from 'react'
-import type { SyncStatus } from '@shared/api'
+import type { AuthProvider, SyncStatus } from '@shared/api'
 import { DEFAULT_SYNC_SERVER } from '@shared/config'
 import { formatDurationShort } from '@shared/format'
 import { api } from '../lib/api'
@@ -20,9 +25,20 @@ function ago(at: number | null, now: number): string {
   return elapsed < 45_000 ? 'just now' : `${formatDurationShort(elapsed)} ago`
 }
 
+/** Matches the server, so the message arrives before a round trip does. */
+const MIN_PASSWORD_LENGTH = 10
+
+type Mode = 'choose' | 'password'
+
 export function SyncPanel({ platform }: { platform: string }): React.JSX.Element {
   const [status, setStatus] = useState<SyncStatus | null>(null)
   const [server, setServer] = useState(DEFAULT_SYNC_SERVER)
+  const [mode, setMode] = useState<Mode>('choose')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [settingPassword, setSettingPassword] = useState(false)
+  const [done, setDone] = useState<string | null>(null)
   const [now, setNow] = useState(Date.now())
   const action = useAction()
 
@@ -53,9 +69,33 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
   // On the web the server is wherever the page came from, so there is nothing
   // to ask; only the desktop has to be told where to sign in.
   const onWeb = platform === 'web'
+  const target = (): string => (onWeb ? window.location.origin : server.trim())
 
-  const signIn = (): void => {
-    void action.run(() => api.signIn(onWeb ? window.location.origin : server.trim()))
+  const withProvider = (provider: AuthProvider) => (): void => {
+    void action.run(() => api.signIn(target(), provider))
+  }
+
+  const withPassword = (): void => {
+    void action
+      .run(() => api.signInWithPassword(target(), email.trim(), password))
+      .then((ok) => {
+        if (ok) {
+          setPassword('')
+          refresh()
+        }
+      })
+  }
+
+  const savePassword = (): void => {
+    setDone(null)
+    void action.run(() => api.setPassword(newPassword)).then((ok) => {
+      if (ok) {
+        setNewPassword('')
+        setSettingPassword(false)
+        setDone('Password saved. You can now sign in with it directly.')
+        refresh()
+      }
+    })
   }
 
   const signOut = (): void => {
@@ -70,18 +110,18 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
     <Panel
       title="Account"
       right={
-        status.signedIn ? (
-          <span className="micro text-faint">
-            {status.pending ? 'CHANGES QUEUED' : 'UP TO DATE'}
-          </span>
-        ) : (
-          <span className="micro text-faint">LOCAL ONLY</span>
-        )
+        <span className="micro text-faint">
+          {status.signedIn ? (status.pending ? 'CHANGES QUEUED' : 'UP TO DATE') : 'LOCAL ONLY'}
+        </span>
       }
     >
       {status.signedIn ? (
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <span className="micro block mb-1">SIGNED IN AS</span>
+              <span className="text-sm break-all">{status.email ?? 'this account'}</span>
+            </div>
             <div>
               <span className="micro block mb-1">SERVER</span>
               <span className="text-sm break-all">{status.server}</span>
@@ -92,14 +132,43 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={syncNow} disabled={action.busy}>
-              {action.busy ? 'SYNCING…' : 'SYNC NOW'}
-            </Button>
-            <Button onClick={signOut} variant="danger" disabled={action.busy}>
-              SIGN OUT
-            </Button>
-          </div>
+          {settingPassword ? (
+            <div className="space-y-3">
+              <Field
+                label="NEW PASSWORD"
+                hint={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what makes one hard to guess.`}
+              >
+                <input
+                  type="password"
+                  value={newPassword}
+                  autoComplete="new-password"
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </Field>
+              <div className="flex gap-2">
+                <Button
+                  onClick={savePassword}
+                  variant="primary"
+                  disabled={action.busy || newPassword.length < MIN_PASSWORD_LENGTH}
+                >
+                  SAVE PASSWORD
+                </Button>
+                <Button onClick={() => setSettingPassword(false)} variant="ghost">
+                  CANCEL
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={syncNow} disabled={action.busy}>
+                {action.busy ? 'SYNCING…' : 'SYNC NOW'}
+              </Button>
+              <Button onClick={() => setSettingPassword(true)}>SET A PASSWORD</Button>
+              <Button onClick={signOut} variant="danger" disabled={action.busy}>
+                SIGN OUT
+              </Button>
+            </div>
+          )}
 
           <Note>
             Signing out forgets the account on this device. Nothing recorded here
@@ -125,11 +194,62 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
             </Field>
           )}
 
-          <Button onClick={signIn} variant="primary" disabled={action.busy}>
-            {action.busy ? 'OPENING…' : 'SIGN IN WITH GITHUB'}
-          </Button>
+          {mode === 'choose' ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={withProvider('google')} variant="primary" disabled={action.busy}>
+                  CONTINUE WITH GOOGLE
+                </Button>
+                <Button onClick={withProvider('github')} disabled={action.busy}>
+                  CONTINUE WITH GITHUB
+                </Button>
+              </div>
+              <Button onClick={() => setMode('password')} variant="ghost">
+                I ALREADY HAVE A PASSWORD
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Field label="EMAIL">
+                <input
+                  type="email"
+                  value={email}
+                  autoComplete="username"
+                  spellCheck={false}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </Field>
+              <Field label="PASSWORD">
+                <input
+                  type="password"
+                  value={password}
+                  autoComplete="current-password"
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') withPassword()
+                  }}
+                />
+              </Field>
+              <div className="flex gap-2">
+                <Button
+                  onClick={withPassword}
+                  variant="primary"
+                  disabled={action.busy || !email.trim() || !password}
+                >
+                  {action.busy ? 'SIGNING IN…' : 'SIGN IN'}
+                </Button>
+                <Button onClick={() => setMode('choose')} variant="ghost">
+                  BACK
+                </Button>
+              </div>
+              <Note>
+                Forgotten it? Continue with Google or GitHub instead, then set a
+                new one. There is no reset email to wait for.
+              </Note>
+            </div>
+          )}
 
-          {!onWeb && (
+          {!onWeb && mode === 'choose' && (
             <Note>
               This opens your browser rather than a window inside the app — a
               window the app controls could read what you type into it.
@@ -138,6 +258,11 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
         </div>
       )}
 
+      {done && (
+        <div className="mt-4">
+          <Note>{done}</Note>
+        </div>
+      )}
       {(action.error || status.lastError) && (
         <div className="mt-4">
           <Note tone="warn">{action.error?.message ?? status.lastError}</Note>
