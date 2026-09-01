@@ -143,6 +143,22 @@ const isApiRoute = (pathname: string): boolean =>
     prefix.endsWith('/') ? pathname.startsWith(prefix) : pathname === prefix
   )
 
+/**
+ * The schema, applied once per isolate rather than once per request.
+ *
+ * Kept as the promise so concurrent requests share one attempt, and cleared on
+ * failure so a transient error does not wedge the isolate permanently.
+ */
+let schemaReady: Promise<void> | null = null
+
+function ensureSchema(sql: Sql): Promise<void> {
+  schemaReady ??= sql.migrate(SCHEMA).catch((err: unknown) => {
+    schemaReady = null
+    throw err
+  })
+  return schemaReady
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url)
@@ -152,7 +168,7 @@ export default {
     if (!isApiRoute(pathname)) return env.ASSETS.fetch(request)
 
     const sql = d1(env.DB)
-    await sql.migrate(SCHEMA)
+    await ensureSchema(sql)
     try {
       return await handle(request, env, sql)
     } catch (err) {

@@ -63,7 +63,10 @@ function sqlite(file: string): Sql & { close(): void } {
       })()
     },
     async migrate(statements: readonly string[]): Promise<void> {
-      for (const sql of statements) db.exec(sql)
+      // One statement per prepare, matching what the D1 adapter does. Using
+      // exec() here is what hid a production failure: D1 splits exec on
+      // newlines, better-sqlite3 does not.
+      for (const sql of statements) db.prepare(sql).run()
     }
   }
 }

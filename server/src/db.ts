@@ -43,7 +43,6 @@ interface D1PreparedStatement {
 export interface D1Database {
   prepare(sql: string): D1PreparedStatement
   batch(statements: D1PreparedStatement[]): Promise<unknown[]>
-  exec(sql: string): Promise<unknown>
 }
 
 export function d1(database: D1Database): Sql {
@@ -65,8 +64,10 @@ export function d1(database: D1Database): Sql {
       await database.batch(statements.map((s) => bound(s.sql, s.params)))
     },
     async migrate(statements: readonly string[]): Promise<void> {
-      // exec runs the multi-statement schema; D1 applies it as one unit.
-      for (const sql of statements) await database.exec(sql)
+      // Not exec(): D1 splits that on newlines and treats each line as its own
+      // statement, so a formatted CREATE TABLE fails with "incomplete input".
+      // prepare() takes one statement whole, however it is laid out.
+      for (const sql of statements) await database.prepare(sql).run()
     }
   }
 }

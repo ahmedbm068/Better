@@ -13,3 +13,6 @@ resources/tray@2x.png
 
 # A stray empty scratch file, kept locally.
 why this will fail.txt
+
+# Wrangler build and dev scratch
+.wrangler/
