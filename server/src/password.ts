@@ -9,7 +9,16 @@
  * it can be raised later and old passwords keep working until their owners next
  * sign in — at which point they are silently rehashed at the new cost.
  */
-export const ITERATIONS = 210_000
+/**
+ * The most Cloudflare will run: it refuses anything above 100,000 outright.
+ *
+ * Below the 210,000 OWASP suggests for PBKDF2-SHA256, and worth being plain
+ * about — this is a platform ceiling, not a judgement call. Two things take
+ * some of the weight off it: an account cannot exist without a provider
+ * sign-up first, and eight wrong guesses lock it for fifteen minutes. The
+ * count is stored per row, so raising it later costs nothing but a deploy.
+ */
+export const ITERATIONS = 100_000
 const KEY_BITS = 256
 const SALT_BYTES = 16
 
