@@ -99,7 +99,7 @@ export function DayArc({
   const nowPoint = at(nowT)
 
   return (
-    <div className="relative w-full max-w-[660px] mx-auto">
+    <div className="relative w-full max-w-[600px] mx-auto">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto block overflow-visible"

@@ -87,14 +87,15 @@ export default function HomePage(): React.JSX.Element {
 
       {action.error && <Note tone={action.error.isGuard ? 'info' : 'warn'}>{action.error.message}</Note>}
 
-      <Hero day={day} now={now} settings={settings} run={run} />
+      {/* The arc gives up the width it was not using, and the quote takes it. */}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4">
+        <Hero day={day} now={now} settings={settings} run={run} />
+        <QuoteCard date={day.date} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_312px] gap-4 items-start">
         <OpenList day={day} run={run} />
-        <div className="space-y-4">
-          <Score day={day} stats={stats} />
-          <QuoteCard date={day.date} />
-        </div>
+        <Score day={day} stats={stats} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -166,8 +167,12 @@ function Hero({
         : 'text-accent'
 
   return (
-    <Panel live={open != null && !checked} pad={false} className="overflow-hidden">
-      <div className="px-6 pt-5">
+    <Panel
+      live={open != null && !checked}
+      pad={false}
+      className="overflow-hidden h-full flex flex-col"
+    >
+      <div className="px-6 pt-5 flex-1 flex flex-col justify-center">
         <DayArc prayers={day.prayers} now={now} settings={settings}>
           <span className="kicker">{kicker}</span>
           <span className="text-[27px] leading-tight font-semibold tracking-[-0.02em] mt-1">

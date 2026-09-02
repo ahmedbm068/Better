@@ -9,6 +9,25 @@
 @source '../../web';
 
 /*
+ * The one handwritten face, embedded rather than assumed.
+ *
+ * Everything else in this file is a system font stack, because the app fetches
+ * nothing over the network and a system stack needs no embedding to honour
+ * that. This one face is worth breaking the pattern for — no OS ships a hand
+ * this good — so the file ships with the app instead: a local asset, bundled
+ * at build time, still nothing fetched at runtime. Alley Garden, by Wahyu Eka
+ * Prasetya; donationware, no personal-use restriction; see
+ * assets/fonts/LICENSE-AlleyGarden.txt.
+ */
+@font-face {
+  font-family: 'Alley Garden';
+  src: url('./assets/fonts/AlleyGarden.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
  * The token sheet.
  *
  * The palette comes from the thing the app is actually about: the arc of one
@@ -246,6 +265,18 @@ html {
     -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, 'SF Mono', monospace;
 
+  /*
+   * The one handwritten voice, used by the quote of the day and nothing else.
+   *
+   * Alley Garden first, embedded above. The rest is the fallback chain kept as
+   * the safety net for the instant before the embedded face has painted, and
+   * for any build that strips the font file out — Ink Free and Segoe Script
+   * ship with Windows, Bradley Hand and Marker Felt with macOS.
+   */
+  --font-script:
+    'Alley Garden', 'Ink Free', 'Segoe Script', 'Bradley Hand ITC', 'Bradley Hand',
+    'Marker Felt', 'Chalkboard SE', 'Comic Sans MS', cursive;
+
   /* Corners are back. Cards are soft, controls softer, chips round. */
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -472,6 +503,36 @@ select:focus-visible {
   }
   to {
     opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Ink settling, for the one place text is handwritten rather than set.
+ *
+ * `rise` is a UI move — a sharp opacity-and-translate pop, right for a card or
+ * a button appearing. A word of script wants to feel drawn, not placed: it
+ * comes in soft, like wet ink still finding its edge, and sharpens as it
+ * settles. That is a blur easing to zero alongside the rise, not instead of it.
+ */
+@keyframes write {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(10px);
+  }
+  60% {
+    filter: blur(0.4px);
+  }
+  to {
+    opacity: 1;
+    /* `blur(0)` and `blur(0px)` are both valid CSS, but the build's minifier
+       normalises either to a bare zero and then strips the argument entirely,
+       leaving the invalid `blur()` — the declaration gets dropped, and the
+       text keeps a faint permanent haze from whichever keyframe last set
+       filter. A non-zero value can't be collapsed the same way; at 0.01px
+       it reads as fully sharp. */
+    filter: blur(0.01px);
     transform: none;
   }
 }

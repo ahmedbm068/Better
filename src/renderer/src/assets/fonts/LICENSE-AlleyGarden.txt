@@ -1,0 +1,15 @@
+Alley Garden ("a Alley Garden")
+Designer: Wahyu Eka Prasetya (wep)
+Copyright (c) 2020, Wahyu Eka Prasetya
+
+Distributed as donationware via dafont.com:
+  https://www.dafont.com/a-alley-garden.font
+
+dafont.com lists this font's license category as "Donationware" — free to
+use, with donations to the designer appreciated but not required. No
+personal-use-only restriction is stated on the font's page or embedded in
+the font's own metadata (checked via its name table: no name-ID-13 license
+clause). This is a materially different situation from a "demo, personal
+use only" font.
+
+Source zip fetched 2026-09-02 from https://dl.dafont.com/dl/?f=a_alley_garden
