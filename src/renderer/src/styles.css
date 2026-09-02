@@ -9,52 +9,209 @@
 @source '../../web';
 
 /*
- * The single token sheet, adopted from the design handoff.
+ * The token sheet.
  *
- * Two themes on one contract: `:root` is dark (the default), `[data-theme='light']`
- * overrides it. Light is not a lightened dark — the accent darkens and the three
- * semantics darken so they clear 4.5:1 on white at 10px.
+ * The palette comes from the thing the app is actually about: the arc of one
+ * day. Night is a deep indigo rather than a neutral charcoal, and the accent is
+ * the warm gold of first and last light. A cool ground under a warm accent is
+ * what makes the live thing on screen read as lit, rather than merely coloured.
+ *
+ * There are two palettes, `--n-*` for night and `--d-*` for day, and exactly
+ * one number that chooses between them: `--daylight`, from 0 to 1. Every live
+ * token below is the same `color-mix` of the two, so the three theme modes are
+ * not three palettes — they are three ways of setting one scalar:
+ *
+ *   dark    --daylight: 0            fixed night
+ *   light   --daylight: 1            fixed day
+ *   solar   set from the real sun    graded, and moving
+ *
+ * At 0 and 1 the mix returns its endpoint exactly, so the fixed themes are
+ * bit-for-bit what they always were. Adding a token means adding it in three
+ * places and nowhere else.
  *
  * No component should contain a hex value. Nothing is fetched over the network.
  */
 
+/*
+ * Two scalars place the theme, and the stylesheet does the rest.
+ *
+ *   --polarity  0 = light text on a dark ground, 1 = dark text on a light one.
+ *               It steps. It is never interpolated, because halfway between the
+ *               two palettes the text and the background are the same grey.
+ *   --warm      0 at deep night and full noon, 1 at the crossing. It leans the
+ *               ground up to `--twilight` toward the opposite palette, so night
+ *               lifts and warms as dawn approaches and day dims into dusk.
+ *
+ * The three modes are three ways of setting them:
+ *
+ *   dark    polarity 0, warm 0     fixed night
+ *   light   polarity 1, warm 0     fixed day
+ *   solar   both, from the real sun
+ *
+ * At warm 0 every mix returns its endpoint exactly, so the fixed themes are
+ * bit-for-bit what they always were.
+ */
+@property --polarity {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --warm {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
 :root {
-  --bg: #121110;
-  --panel: #191817;
-  --panel2: #201e1c;
-  --line: #2a2825;
-  --line2: #3b3833;
-  --text: #eeebe6;
-  --text2: #a49d95;
-  --text3: #837c74;
-  --accent: #e8a33d;
-  --accent-ink: #17130d;
-  --done: #7dae77;
-  --late: #5e8465;
-  --missed: #c06a5e;
-  --grace: #7f97b5;
-  --wait: #3b3833;
-  --scrim: rgb(0 0 0 / 0.62);
+  /* ---------------------------------------------------------------- night */
+  --n-bg: #0e0d14;
+  --n-panel: #16151f;
+  --n-panel2: #1e1c29;
+  --n-line: #262435;
+  --n-line2: #363348;
+  --n-text: #edebf2;
+  --n-text2: #a6a2b6;
+  --n-text3: #7d7992;
+  --n-accent: #f5b54c;
+  --n-accent-ink: #17130a;
+  --n-accent2: #8e7cf5;
+  --n-done: #55c48e;
+  --n-late: #6e9f87;
+  --n-missed: #e4756a;
+  --n-grace: #7fa6ee;
+  --n-wait: #262435;
+  --n-scrim: rgb(6 5 12 / 0.66);
+  /* On a dark ground a hairline top highlight does more than any shadow can. */
+  --n-edge: rgb(255 255 255 / 0.05);
+  --n-shade-1: rgb(0 0 0 / 0.4);
+  --n-shade-2: rgb(0 0 0 / 0.8);
+  --n-wash-warm: rgb(245 181 76 / 0.07);
+  --n-wash-cool: rgb(142 124 245 / 0.07);
+
+  /* ------------------------------------------------------------------ day */
+  /* Not a lightened night: the accent and the semantics darken so they clear
+     4.5:1 on white. */
+  --d-bg: #f3f3f7;
+  --d-panel: #ffffff;
+  --d-panel2: #f7f7fb;
+  --d-line: #e5e4ed;
+  --d-line2: #cfcddc;
+  --d-text: #1a1826;
+  --d-text2: #5b5770;
+  --d-text3: #79748f;
+  --d-accent: #a5680a;
+  --d-accent-ink: #ffffff;
+  --d-accent2: #5b45c7;
+  --d-done: #2f7f58;
+  --d-late: #5f8570;
+  --d-missed: #b24338;
+  --d-grace: #3e5fa8;
+  --d-wait: #e5e4ed;
+  /* A light ground needs a far lighter scrim, or the page turns muddy. */
+  --d-scrim: rgb(26 24 38 / 0.3);
+  /* Nothing to catch the light on a white card. */
+  --d-edge: rgb(255 255 255 / 0);
+  --d-shade-1: rgb(26 24 38 / 0.05);
+  --d-shade-2: rgb(26 24 38 / 0.35);
+  --d-wash-warm: rgb(165 104 10 / 0.06);
+  --d-wash-cool: rgb(91 69 199 / 0.06);
+
+  /* --------------------------------------------------------- the position */
+  --polarity: 0;
+  --warm: 0;
+  /* How far twilight may carry the ground toward the other palette.
+     Measured, not guessed. Every step of lean costs the low-contrast tokens,
+     because a muted caption was tuned against a pure ground: at 26% the caption
+     colour fell to 2.3:1, at 10% it holds 3.5:1 and body text stays above 12:1.
+     Raising this without re-measuring will quietly break the small type. */
+  --twilight: 10%;
+
+  /* -------------------------------------------- the live tokens: foreground */
+  /* These step with the polarity, so they are always the readable extreme of
+     whatever ground is underneath them. */
+  --text: color-mix(in oklab, var(--d-text) calc(var(--polarity) * 100%), var(--n-text));
+  --text2: color-mix(in oklab, var(--d-text2) calc(var(--polarity) * 100%), var(--n-text2));
+  /* The faintest text is the first thing a leaning ground costs, so it earns it
+     back: at the crossing it borrows from the tier above and steps up in
+     contrast exactly as far as the ground steps down. At warm 0 this is a
+     no-op, so the fixed themes keep the colour they always had. */
+  --text3-base: color-mix(in oklab, var(--d-text3) calc(var(--polarity) * 100%), var(--n-text3));
+  --text3: color-mix(in oklab, var(--text2) calc(var(--warm) * 55%), var(--text3-base));
+  --accent: color-mix(in oklab, var(--d-accent) calc(var(--polarity) * 100%), var(--n-accent));
+  --accent-ink: color-mix(in oklab, var(--d-accent-ink) calc(var(--polarity) * 100%), var(--n-accent-ink));
+  --accent2: color-mix(in oklab, var(--d-accent2) calc(var(--polarity) * 100%), var(--n-accent2));
+  --done: color-mix(in oklab, var(--d-done) calc(var(--polarity) * 100%), var(--n-done));
+  --late: color-mix(in oklab, var(--d-late) calc(var(--polarity) * 100%), var(--n-late));
+  --missed: color-mix(in oklab, var(--d-missed) calc(var(--polarity) * 100%), var(--n-missed));
+  --grace: color-mix(in oklab, var(--d-grace) calc(var(--polarity) * 100%), var(--n-grace));
+  --scrim: color-mix(in oklab, var(--d-scrim) calc(var(--polarity) * 100%), var(--n-scrim));
+  --edge: color-mix(in oklab, var(--d-edge) calc(var(--polarity) * 100%), var(--n-edge));
+  --shade-1: color-mix(in oklab, var(--d-shade-1) calc(var(--polarity) * 100%), var(--n-shade-1));
+  --shade-2: color-mix(in oklab, var(--d-shade-2) calc(var(--polarity) * 100%), var(--n-shade-2));
+  --wash-warm: color-mix(in oklab, var(--d-wash-warm) calc(var(--polarity) * 100%), var(--n-wash-warm));
+  --wash-cool: color-mix(in oklab, var(--d-wash-cool) calc(var(--polarity) * 100%), var(--n-wash-cool));
+
+  /* ------------------------------------------------ the live tokens: ground */
+  /* `own` is the palette this polarity belongs to and `opp` is the other one;
+     `warm` leans from the first toward the second. */
+  --own-bg: color-mix(in oklab, var(--d-bg) calc(var(--polarity) * 100%), var(--n-bg));
+  --opp-bg: color-mix(in oklab, var(--n-bg) calc(var(--polarity) * 100%), var(--d-bg));
+  --bg: color-mix(in oklab, var(--opp-bg) calc(var(--warm) * var(--twilight)), var(--own-bg));
+
+  --own-panel: color-mix(in oklab, var(--d-panel) calc(var(--polarity) * 100%), var(--n-panel));
+  --opp-panel: color-mix(in oklab, var(--n-panel) calc(var(--polarity) * 100%), var(--d-panel));
+  --panel: color-mix(in oklab, var(--opp-panel) calc(var(--warm) * var(--twilight)), var(--own-panel));
+
+  --own-panel2: color-mix(in oklab, var(--d-panel2) calc(var(--polarity) * 100%), var(--n-panel2));
+  --opp-panel2: color-mix(in oklab, var(--n-panel2) calc(var(--polarity) * 100%), var(--d-panel2));
+  --panel2: color-mix(in oklab, var(--opp-panel2) calc(var(--warm) * var(--twilight)), var(--own-panel2));
+
+  --own-line: color-mix(in oklab, var(--d-line) calc(var(--polarity) * 100%), var(--n-line));
+  --opp-line: color-mix(in oklab, var(--n-line) calc(var(--polarity) * 100%), var(--d-line));
+  --line: color-mix(in oklab, var(--opp-line) calc(var(--warm) * var(--twilight)), var(--own-line));
+
+  --own-line2: color-mix(in oklab, var(--d-line2) calc(var(--polarity) * 100%), var(--n-line2));
+  --opp-line2: color-mix(in oklab, var(--n-line2) calc(var(--polarity) * 100%), var(--d-line2));
+  --line2: color-mix(in oklab, var(--opp-line2) calc(var(--warm) * var(--twilight)), var(--own-line2));
+
+  --own-wait: color-mix(in oklab, var(--d-wait) calc(var(--polarity) * 100%), var(--n-wait));
+  --opp-wait: color-mix(in oklab, var(--n-wait) calc(var(--polarity) * 100%), var(--d-wait));
+  --wait: color-mix(in oklab, var(--opp-wait) calc(var(--warm) * var(--twilight)), var(--own-wait));
+
+  /* Depth is a top highlight plus two shadows, built from the stepped tokens so
+     it inverts with everything else. */
+  --shadow-card: inset 0 1px 0 var(--edge), 0 1px 2px var(--shade-1),
+    0 12px 28px -18px var(--shade-2);
+  --shadow-lift: inset 0 1px 0 var(--edge), 0 2px 6px var(--shade-1),
+    0 18px 40px -20px var(--shade-2);
+  --shadow-pop: 0 24px 70px -20px var(--shade-2);
+
+  /* The ambient wash behind everything: a warm rise at top-left, a cool fall at
+     bottom-right. Fixed, so it never scrolls with the content. */
+  --wash:
+    radial-gradient(120% 80% at 8% -10%, var(--wash-warm), transparent 58%),
+    radial-gradient(90% 70% at 100% 108%, var(--wash-cool), transparent 60%);
+}
+
+/*
+ * The two fixed modes. `solar` is deliberately absent: its scalars are written
+ * onto the root element from the sun, and an inline style outranks these.
+ */
+[data-theme='dark'] {
+  --polarity: 0;
+  --warm: 0;
 }
 
 [data-theme='light'] {
-  --bg: #f2f1ef;
-  --panel: #ffffff;
-  --panel2: #f7f6f4;
-  --line: #e2dfda;
-  --line2: #cbc7c0;
-  --text: #1a1917;
-  --text2: #5c5750;
-  --text3: #6f6a63;
-  --accent: #a8680b;
-  --accent-ink: #ffffff;
-  --done: #3f6a3a;
-  --late: #6d8a67;
-  --missed: #98453b;
-  --grace: #42597a;
-  --wait: #d8d4ce;
-  /* A light ground needs a far lighter scrim, or the page turns muddy. */
-  --scrim: rgb(28 32 38 / 0.28);
+  --polarity: 1;
+  --warm: 0;
+}
+
+/* Twilight eases; the inversion does not, and must not — transitioning the
+   polarity would drag every colour through the unreadable middle. */
+html {
+  transition: --warm 600ms ease;
 }
 
 @theme inline {
@@ -67,6 +224,7 @@
   --color-dim: var(--text2);
   --color-faint: var(--text3);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent2);
   --color-accent-ink: var(--accent-ink);
   --color-done: var(--done);
   --color-late: var(--late);
@@ -75,23 +233,33 @@
   --color-wait: var(--wait);
   --color-scrim: var(--scrim);
 
-  /* The one permitted tint, per the handoff: accent mixed into the panel. */
+  /* Tinted grounds: the accent mixed into the panel, and the accent as a wash
+     over whatever happens to be behind it. */
   --color-accent-soft: color-mix(in oklab, var(--accent) 14%, var(--panel));
-  --color-missed-soft: color-mix(in oklab, var(--missed) 14%, var(--panel));
+  --color-accent-ghost: color-mix(in oklab, var(--accent) 13%, transparent);
+  --color-done-ghost: color-mix(in oklab, var(--done) 13%, transparent);
+  --color-missed-soft: color-mix(in oklab, var(--missed) 12%, var(--panel));
+  --color-missed-ghost: color-mix(in oklab, var(--missed) 13%, transparent);
+  --color-grace-ghost: color-mix(in oklab, var(--grace) 13%, transparent);
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, 'Cascadia Mono', 'Segoe UI Mono', Consolas, 'SF Mono', monospace;
 
-  /* Radius is 0 everywhere. `rounded-full` is a literal and still works, which
-     is what the dot strips and meters need. */
-  --radius-xs: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
+  /* Corners are back. Cards are soft, controls softer, chips round. */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 9px;
+  --radius-lg: 13px;
+  --radius-xl: 17px;
+  --radius-2xl: 22px;
+  --radius-3xl: 28px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-lift: var(--shadow-lift);
+  --shadow-pop: var(--shadow-pop);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 html,
@@ -105,96 +273,153 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 13.5px;
-  line-height: 1.45;
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
 
-/* Every number, time, duration, countdown and score is mono and tabular, so
-   columns of figures align and a ticking clock never reflows. */
+/* The ambient wash sits behind the whole app and never scrolls with it. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--wash);
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* Every number, time, duration, countdown and score is tabular, so columns of
+   figures align and a ticking clock never reflows. */
 * {
   font-variant-numeric: tabular-nums;
 }
 
-.num {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: 'tnum' 1;
-}
+/*
+ * The type helpers, in the components layer.
+ *
+ * Same trap as the form reset: unlayered CSS outranks everything inside
+ * `@layer`, so an unlayered `.kicker { color: ... }` silently beat any Tailwind
+ * colour utility set beside it — `kicker text-accent` rendered grey, and would
+ * have gone on doing so wherever anyone paired one of these with a colour.
+ * `components` sits below `utilities`, which is where a default belongs.
+ */
+@layer components {
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
 
-/* Panel header: 11px / 700 / 0.16em uppercase. */
-.label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--text3);
-}
+  /* Panel header. Sentence case at a readable size — the old all-caps mono made
+     every label shout at the same volume as the data it introduced. */
+  .label {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--text);
+  }
 
-/* Section kicker inside a panel: smaller and tighter than a panel header. */
-.kicker {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--text3);
-}
+  /* Section kicker inside a panel: the one place small caps still earns its keep,
+     because it has to disappear until you go looking for it. */
+  .kicker {
+    font-size: 10.5px;
+    font-weight: 650;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
 
-/* Micro label: mono, uppercase, for units and meta. Never below 10px. */
-.micro {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text3);
-}
+  /* Micro label: units, meta, captions. Never below 11px, never shouted. */
+  .micro {
+    font-size: 11.5px;
+    color: var(--text3);
+  }
 
-.quiet {
-  color: var(--text3);
-  font-size: 12px;
+  .quiet {
+    color: var(--text3);
+    font-size: 12.5px;
+  }
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--line2);
-  border: 3px solid var(--bg);
+  border: 4px solid transparent;
+  border-radius: 99px;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text3);
+  background-clip: padding-box;
 }
 
-input,
-textarea,
-select,
-button {
-  font: inherit;
-  color: inherit;
-  border-radius: 0;
-}
+/*
+ * Form controls, in the base layer.
+ *
+ * The layer is not decorative. Unlayered CSS outranks everything inside
+ * `@layer`, so an unlayered `button { color: inherit }` silently beat every
+ * Tailwind text-colour utility — `text-accent-ink` on the primary button,
+ * `text-faint` on ghost buttons, `text-accent` on the active nav item — no
+ * matter how specific the class was. Every button on every screen rendered in
+ * the body colour. Putting these in `base` puts them below `utilities`, which
+ * is where a reset belongs.
+ */
+@layer base {
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    color: inherit;
+  }
 
-input[type='text'],
-input[type='number'],
-input[type='time'],
-input[type='date'],
-textarea,
-select {
-  background: var(--bg);
-  border: 1px solid var(--line2);
-  padding: 7px 10px;
-  outline: none;
-  width: 100%;
-}
+  /*
+   * Every text-like input, enumerated.
+   *
+   * This list used to stop at `date`, which meant the email and password fields
+   * on the sign-in page — the front door of the web app — fell through to the
+   * Tailwind reset: transparent background, no border, invisible on a dark
+   * ground. Adding a type here is what makes it visible at all.
+   */
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='search'],
+  input[type='tel'],
+  input[type='url'],
+  input[type='number'],
+  input[type='time'],
+  input[type='date'],
+  textarea,
+  select {
+    background: var(--panel2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 9px 12px;
+    outline: none;
+    width: 100%;
+    transition:
+      border-color 0.16s ease,
+      box-shadow 0.16s ease,
+      background 0.16s ease;
+  }
 
-input::placeholder,
-textarea::placeholder {
-  color: var(--text3);
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--text3);
+  }
 }
 
 /* Focus rings are themed — never the browser default. */
@@ -206,9 +431,10 @@ textarea::placeholder {
 input:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
+  outline: none;
   border-color: var(--accent);
+  background: var(--panel);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 22%, transparent);
 }
 
 /* Date/time pickers ship a light glyph; invert it so it reads on dark panels. */
@@ -217,22 +443,126 @@ select:focus-visible {
   filter: invert(0.75);
 }
 
+/* ------------------------------------------------------------------ motion */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The check mark draws itself rather than appearing. */
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* The halo around the live marker: it breathes, it does not blink. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.08;
+    transform: scale(2.1);
+  }
+}
+
 @keyframes pulse-soft {
   0%,
   100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.4;
+    opacity: 0.45;
   }
 }
 
 .pulse {
-  animation: pulse-soft 2s ease-in-out infinite;
+  animation: pulse-soft 2.4s ease-in-out infinite;
+}
+
+.breathe {
+  animation: breathe 2.8s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* `rise` with a per-element delay: the page assembles itself on arrival. */
+.rise {
+  animation: rise 0.5s var(--ease-out-soft) both;
+  animation-delay: var(--d, 0ms);
+}
+
+.fade-in {
+  animation: fade 0.4s ease both;
+  animation-delay: var(--d, 0ms);
+}
+
+.pop-in {
+  animation: pop 0.34s var(--ease-out-soft) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Children of a stagger enter one after another, with no per-item props. */
+.stagger > * {
+  animation: rise 0.42s var(--ease-out-soft) both;
+}
+.stagger > *:nth-child(1) {
+  animation-delay: 20ms;
+}
+.stagger > *:nth-child(2) {
+  animation-delay: 55ms;
+}
+.stagger > *:nth-child(3) {
+  animation-delay: 90ms;
+}
+.stagger > *:nth-child(4) {
+  animation-delay: 125ms;
+}
+.stagger > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger > *:nth-child(6) {
+  animation-delay: 195ms;
+}
+.stagger > *:nth-child(n + 7) {
+  animation-delay: 230ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pulse {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }

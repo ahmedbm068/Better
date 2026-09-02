@@ -1,11 +1,26 @@
-import { useEffect, useState } from 'react'
-import type { Settings, WorkSession } from '@shared/types'
+import { useEffect, useState, type ReactNode } from 'react'
+import type { Settings, Theme, WorkSession } from '@shared/types'
 import { isoWeekNumber, zoneLabel } from '@shared/time'
+import { daylightAt, sunTimesFromPrayers, themePosition } from '@shared/daylight'
 import { formatClock, formatDateShort, formatSecondsAsHours } from '@shared/format'
 import { api } from './lib/api'
 import { useAppEvent, useAsync, useNow } from './lib/hooks'
 import { NavProvider, useNav, type RouteName } from './lib/nav'
 import { Button, Modal, Note } from './components/ui'
+import { QuoteIntro } from './components/quote'
+import {
+  IconCalendar,
+  IconLists,
+  IconReview,
+  IconSettings,
+  IconSleep,
+  IconStats,
+  IconToday,
+  IconWeek,
+  IconWork,
+  Logo,
+  type IconProps
+} from './components/icons'
 import HomePage from './pages/Home'
 import CalendarPage from './pages/Calendar'
 import WeekPage from './pages/Week'
@@ -23,32 +38,32 @@ interface NavItem {
   name: RouteName
   label: string
   key: string
+  icon: (p: IconProps) => React.JSX.Element
 }
 
-/** Three labelled groups: what is happening now, what already happened, and setup. */
-const NAV_GROUPS: Array<{ group: string; items: NavItem[] }> = [
-  { group: 'Now', items: [{ name: 'home', label: 'Today', key: '1' }] },
-  {
-    group: 'History',
-    items: [
-      { name: 'calendar', label: 'Calendar', key: '2' },
-      { name: 'week', label: 'Week', key: '3' },
-      { name: 'work', label: 'Work', key: '4' },
-      { name: 'sleep', label: 'Sleep', key: '5' },
-      { name: 'stats', label: 'Stats', key: '6' },
-      { name: 'review', label: 'Review', key: '7' }
-    ]
-  },
-  {
-    group: 'Setup',
-    items: [
-      { name: 'lists', label: 'Lists', key: '8' },
-      { name: 'settings', label: 'Settings', key: '9' }
-    ]
-  }
+/**
+ * Three groups: what is happening now, what already happened, and setup.
+ *
+ * The groups used to carry printed headings. The icons and the rules between
+ * them do that job now, which is three fewer lines of text on every screen.
+ */
+const NAV_GROUPS: NavItem[][] = [
+  [{ name: 'home', label: 'Today', key: '1', icon: IconToday }],
+  [
+    { name: 'calendar', label: 'Calendar', key: '2', icon: IconCalendar },
+    { name: 'week', label: 'Week', key: '3', icon: IconWeek },
+    { name: 'work', label: 'Work', key: '4', icon: IconWork },
+    { name: 'sleep', label: 'Sleep', key: '5', icon: IconSleep },
+    { name: 'stats', label: 'Stats', key: '6', icon: IconStats },
+    { name: 'review', label: 'Review', key: '7', icon: IconReview }
+  ],
+  [
+    { name: 'lists', label: 'Lists', key: '8', icon: IconLists },
+    { name: 'settings', label: 'Settings', key: '9', icon: IconSettings }
+  ]
 ]
 
-const ALL_NAV = NAV_GROUPS.flatMap((g) => g.items)
+const ALL_NAV = NAV_GROUPS.flat()
 
 function Sidebar(): React.JSX.Element {
   const now = useNow(1000)
@@ -66,65 +81,75 @@ function Sidebar(): React.JSX.Element {
 
   // The meta figure each item carries, so the sidebar reports as well as navigates.
   const meta: Partial<Record<RouteName, string>> = {
-    home: day ? String(day.score.total) : '—',
-    week: today ? `W${isoWeekNumber(today)}` : '—',
-    work: totals ? formatSecondsAsHours(totals.todaySeconds) : '—'
+    home: day ? String(day.score.total) : '',
+    week: today ? `W${isoWeekNumber(today)}` : '',
+    work: totals && totals.todaySeconds > 0 ? formatSecondsAsHours(totals.todaySeconds) : ''
   }
 
   return (
-    <nav className="w-[188px] shrink-0 border-r border-line bg-panel flex flex-col">
-      <div className="px-[18px] pt-4 pb-3.5 border-b border-line select-none">
-        <div className="num text-accent font-bold tracking-[0.2em] text-[14px]">BETTER</div>
+    <nav className="w-[210px] shrink-0 border-r border-line bg-panel flex flex-col">
+      <div className="px-4 pt-4 pb-3.5 select-none">
+        <div className="flex items-center gap-2.5">
+          <Logo size={24} className="text-fg" />
+          <span className="text-[16px] font-semibold tracking-[-0.01em]">Better</span>
+        </div>
         {/* Said what it was, always. Now it says what it is. */}
-        <div className="micro mt-1" title={sync?.email ?? undefined}>
-          {sync?.signedIn ? (sync.pending ? 'Synced · Pending' : 'Synced') : 'Local · Offline'}
+        <div className="flex items-center gap-1.5 mt-2 pl-0.5" title={sync?.email ?? undefined}>
+          <span
+            className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+              sync?.signedIn ? (sync.pending ? 'bg-accent' : 'bg-done') : 'bg-line-strong'
+            }`}
+          />
+          <span className="micro truncate">
+            {sync?.signedIn ? (sync.pending ? 'Syncing' : 'Synced') : 'Offline'}
+          </span>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto py-2">
-        {NAV_GROUPS.map(({ group, items }) => (
-          <div key={group} className="mb-1">
-            <div className="micro px-[18px] py-2">{group}</div>
-            <ul>
-              {items.map((item) => {
-                const active =
-                  route.name === item.name || (item.name === 'calendar' && route.name === 'day')
-                return (
-                  <li key={item.name}>
-                    <button
-                      type="button"
-                      onClick={() => go(item.name)}
-                      title={`${item.label}  (Alt+${item.key})`}
-                      className={`w-full h-8 px-[18px] flex items-center justify-between gap-2
-                        border-l-2 cursor-pointer transition-colors text-[12.5px]
-                        ${
-                          active
-                            ? 'bg-panel-2 border-l-accent text-fg font-semibold'
-                            : 'border-l-transparent text-dim hover:text-fg hover:bg-panel-2'
-                        }`}
-                    >
-                      <span className="flex items-center gap-2 truncate">
-                        {item.label}
-                        {item.name === 'review' && due && (
-                          <span className="w-1.5 h-1.5 bg-accent" title="Review ready" />
-                        )}
-                      </span>
+      <div className="flex-1 overflow-y-auto px-2 pb-2">
+        {NAV_GROUPS.map((items, i) => (
+          <ul key={i} className={i > 0 ? 'mt-2 pt-2 border-t border-line' : ''}>
+            {items.map((item) => {
+              const active =
+                route.name === item.name || (item.name === 'calendar' && route.name === 'day')
+              const Icon = item.icon
+              return (
+                <li key={item.name}>
+                  <button
+                    type="button"
+                    onClick={() => go(item.name)}
+                    title={`${item.label}  (Alt+${item.key})`}
+                    className={`w-full h-9 px-2.5 mb-0.5 rounded-lg flex items-center gap-2.5
+                      cursor-pointer transition-colors text-[13px]
+                      ${
+                        active
+                          ? 'bg-accent-ghost text-accent font-medium'
+                          : 'text-dim hover:text-fg hover:bg-panel-2'
+                      }`}
+                  >
+                    <Icon size={17} className="shrink-0" />
+                    <span className="truncate flex-1 text-left">{item.label}</span>
+                    {item.name === 'review' && due && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" title="Review ready" />
+                    )}
+                    {meta[item.name] && (
                       <span className={`num text-[11px] ${active ? 'text-accent' : 'text-faint'}`}>
-                        {meta[item.name] ?? ''}
+                        {meta[item.name]}
                       </span>
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
         ))}
       </div>
 
-      <div className="px-[18px] py-3.5 border-t border-line">
-        <div className="micro">{today ? formatDateShort(today) : ''}</div>
-        <div className="num text-[22px] leading-tight mt-0.5">{formatClock(now, tz)}</div>
-        <div className="micro mt-0.5">{zoneLabel(tz, now)}</div>
+      <div className="px-4 py-3.5 border-t border-line">
+        <div className="num text-[22px] leading-tight">{formatClock(now, tz)}</div>
+        <div className="micro mt-0.5 truncate">
+          {today ? formatDateShort(today) : ''} · {zoneLabel(tz, now)}
+        </div>
       </div>
     </nav>
   )
@@ -141,15 +166,17 @@ function StatusBar(): React.JSX.Element {
 
   return (
     <footer className="shrink-0 border-t border-line">
-      <div className="h-6 px-[18px] flex items-center justify-between gap-4 text-[10.5px] font-mono text-faint">
-        <span className="truncate" title={info?.dbPath}>
+      <div
+        className="h-7 px-4 flex items-center gap-2 text-[11px] text-faint"
+        title="Alt+1…9 switches view · Ctrl+Shift+H toggles the window"
+      >
+        <span
+          className={`w-1.5 h-1.5 rounded-full shrink-0 transition-colors ${
+            saved ? 'bg-done' : 'bg-line-strong'
+          }`}
+        />
+        <span className="truncate font-mono" title={info?.dbPath}>
           {path}
-          <span className="mx-2 opacity-50">·</span>
-          {saved ? 'SAVED' : 'IDLE'}
-        </span>
-        <span className="hidden md:flex gap-4 shrink-0">
-          <span>ALT+1…9 VIEWS</span>
-          <span>CTRL+SHIFT+H TOGGLE</span>
         </span>
       </div>
     </footer>
@@ -198,10 +225,11 @@ function ReviewBanner(): React.JSX.Element | null {
 
   if (!due || dismissed || route.name === 'review') return null
   return (
-    <div className="px-[18px] py-2.5 border-b border-line bg-panel-2 border-l-2 border-l-accent flex items-center justify-between gap-4">
-      <span className="text-[12.5px]">The week is complete. The review is ready when you are.</span>
+    <div className="mx-6 mt-4 -mb-1 px-4 py-2.5 rounded-lg bg-accent-ghost
+      flex items-center justify-between gap-4 fade-in">
+      <span className="text-[13px]">The week is complete. Your review is ready.</span>
       <span className="flex gap-2 shrink-0">
-        <Button size="sm" variant="ghost" onClick={() => go('review')}>
+        <Button size="sm" variant="primary" onClick={() => go('review')}>
           Open review
         </Button>
         <Button size="sm" variant="ghost" onClick={() => setDismissed(true)}>
@@ -240,6 +268,19 @@ function Routes(): React.JSX.Element {
   }
 }
 
+/**
+ * A view swap replays the entrance animation rather than cutting, so moving
+ * between screens reads as one app rather than as a page load.
+ */
+function ViewTransition({ children }: { children: ReactNode }): React.JSX.Element {
+  const { route } = useNav()
+  return (
+    <div key={`${route.name}:${route.date ?? ''}`} className="fade-in">
+      {children}
+    </div>
+  )
+}
+
 function Shell(): React.JSX.Element {
   const { go } = useNav()
 
@@ -268,13 +309,60 @@ function Shell(): React.JSX.Element {
       <main className="flex-1 min-w-0 flex flex-col">
         <ReviewBanner />
         <div className="flex-1 min-h-0 overflow-y-auto">
-          <Routes />
+          <ViewTransition>
+            <Routes />
+          </ViewTransition>
         </div>
         <StatusBar />
       </main>
       <LongSessionPrompt />
+      <QuoteIntro />
     </div>
   )
+}
+
+/**
+ * Puts the chosen theme on the document, and — in `solar` mode — keeps it
+ * moving with the sun.
+ *
+ * The stylesheet does all of the colour work: everything here writes is one
+ * number. `--daylight` runs 0 at night to 1 at midday and the whole palette is
+ * a `color-mix` across it, so the ground eases from indigo to paper through
+ * dawn and back again at dusk.
+ *
+ * The sun comes from the day's own prayer times, which are solar events already
+ * computed for the user's coordinates. That means the theme and the day arc are
+ * reading the same sky, and there is no second source of truth to drift.
+ *
+ * A minute is a fine resolution: across the slowest part of a transition the
+ * palette moves by well under one per cent in that time.
+ */
+function useThemeMode(theme: Theme | undefined): void {
+  const { data: today } = useAsync(() => api.currentDate(), [])
+  const { data: day } = useAsync(
+    () => (theme === 'solar' && today ? api.getDay(today) : Promise.resolve(null)),
+    [theme, today]
+  )
+  const now = useNow(60_000)
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (!theme) return
+    root.dataset.theme = theme
+
+    // The fixed modes take their scalar from the stylesheet. Clearing the
+    // inline values matters: they would otherwise outrank it forever.
+    const sun = theme === 'solar' && day ? sunTimesFromPrayers(day.prayers) : null
+    if (!sun) {
+      root.style.removeProperty('--polarity')
+      root.style.removeProperty('--warm')
+      return
+    }
+
+    const { polarity, warm } = themePosition(daylightAt(now, sun))
+    root.style.setProperty('--polarity', String(polarity))
+    root.style.setProperty('--warm', warm.toFixed(4))
+  }, [theme, day, now])
 }
 
 /** Remembers that someone chose to carry on without an account. */
@@ -294,6 +382,9 @@ export default function App(): React.JSX.Element {
   const [failed, setFailed] = useState<string | null>(null)
   const [gate, setGate] = useState<{ web: boolean; status: SyncStatus } | null>(null)
   const [skipped, setSkipped] = useState(hasSkipped)
+
+  // Called before any early return, so the sign-in gate is themed too.
+  useThemeMode(settings?.theme)
 
   useEffect(() => {
     api
@@ -325,11 +416,6 @@ export default function App(): React.JSX.Element {
       }
     })
   })
-
-  // The theme lives on <html> so the CSS variables cascade to everything.
-  useEffect(() => {
-    if (settings) document.documentElement.dataset.theme = settings.theme
-  }, [settings])
 
   useAppEvent('data:changed', () => {
     api

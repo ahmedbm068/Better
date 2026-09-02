@@ -124,6 +124,16 @@ describe('the services work unchanged', () => {
     expect(readSettings().latitude).toBeCloseTo(36.8)
   })
 
+  it('keeps every theme mode, and refuses one it does not know', () => {
+    for (const theme of ['dark', 'light', 'solar'] as const) {
+      writeSettings({ theme })
+      expect(readSettings().theme).toBe(theme)
+    }
+    // Sanitising is what stops a bad value reaching the stylesheet.
+    writeSettings({ theme: 'neon' as unknown as 'dark' })
+    expect(readSettings().theme).toBe('dark')
+  })
+
   it('snapshots prayer times for a day', () => {
     const times = getDayTimes('2026-09-01', readSettings())
     expect(times.fajr).toBeGreaterThan(0)

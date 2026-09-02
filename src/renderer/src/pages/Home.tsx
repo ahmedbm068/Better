@@ -1,16 +1,20 @@
 /**
  * Today — the home screen, in four tiers.
  *
- *   1  status bar   the day's score, its shape, and what is still open
- *   2  hero         the open window, plus a day rail showing where we are in it
- *   3  checklist    prayers, habits and avoid merged into one scannable column
- *   4  right rail   everything real but secondary, demoted rather than deleted
+ *   1  header    the date, and nothing that competes with it
+ *   2  the arc    where the day is, and the one number that is counting
+ *   3  the list   everything still open, as one column; everything settled, folded away
+ *   4  the tiles  focus, sleep and the quit counter, at a glance
+ *
+ * The rebuild is a subtraction. The old screen put nine panels on one plane and
+ * asked you to find the important one; this one has a single focal point, and
+ * anything already dealt with is collapsed behind a count.
  *
  * The single accent marks the live thing and the one primary action. Nothing
  * here fakes a zero: no data renders as an em dash.
  */
-import { useState } from 'react'
-import type { DaySnapshot, PrayerStatus, QuitStats, Settings, WorkSession } from '@shared/types'
+import { useState, type ReactNode } from 'react'
+import type { DaySnapshot, QuitStats, Settings, WorkSession } from '@shared/types'
 import type { SleepNight, StatsResult, WorkTotals } from '@shared/api'
 import { PRAYER_LABELS } from '@shared/types'
 import {
@@ -24,24 +28,38 @@ import {
   WEEKDAY_NAMES
 } from '@shared/format'
 import { weekdaysFromMask } from '@shared/streaks'
-import { wallMinutes } from '@shared/time'
+import { isoWeekNumber } from '@shared/time'
 import { api } from '../lib/api'
 import { useAction, useAsync, useNow } from '../lib/hooks'
 import { useNav } from '../lib/nav'
+import { DayArc, PrayerRow } from '../components/dayarc'
+import { QuoteCard } from '../components/quote'
+import {
+  IconChevron,
+  IconMoney,
+  IconPlay,
+  IconSleep,
+  IconStop,
+  IconWork,
+  MarkAllPrayers,
+  MarkSmokeFree
+} from '../components/icons'
 import {
   Button,
   CheckRow,
+  Chip,
   DayStrip,
-  Empty,
-  Kicker,
-  MarkSmokeFree,
   Meter,
   MiniBars,
   Modal,
   Note,
   Panel,
-  StreakBadge
+  Ring,
+  StreakBadge,
+  type CheckState
 } from '../components/ui'
+
+type Run = (fn: () => Promise<unknown>) => void
 
 export default function HomePage(): React.JSX.Element {
   const now = useNow(1000)
@@ -57,34 +75,32 @@ export default function HomePage(): React.JSX.Element {
   const { data: nights } = useAsync(() => api.getRecentNights(14), [])
   const action = useAction()
 
-  if (!day || !settings || !today) return <div className="p-[18px] text-faint">Loading…</div>
+  if (!day || !settings || !today) return <div className="p-6 text-faint">Loading…</div>
 
-  const run = (fn: () => Promise<unknown>): void => {
+  const run: Run = (fn) => {
     void action.run(fn).then(() => reload())
   }
 
   return (
-    <div className="pb-5">
-      <StatusStrip day={day} settings={settings} stats={stats} />
+    <div className="mx-auto w-full max-w-[1120px] px-6 py-5 space-y-4 stagger">
+      <Header day={day} settings={settings} />
 
-      {action.error && (
-        <div className="px-[18px] pt-3">
-          <Note tone={action.error.isGuard ? 'info' : 'warn'}>{action.error.message}</Note>
+      {action.error && <Note tone={action.error.isGuard ? 'info' : 'warn'}>{action.error.message}</Note>}
+
+      <Hero day={day} now={now} settings={settings} run={run} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_312px] gap-4 items-start">
+        <OpenList day={day} run={run} />
+        <div className="space-y-4">
+          <Score day={day} stats={stats} />
+          <QuoteCard date={day.date} />
         </div>
-      )}
-
-      <div className="px-[18px] pt-4">
-        <Hero day={day} now={now} settings={settings} run={run} />
       </div>
 
-      <div className="px-[18px] pt-2.5 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_296px] gap-2.5 items-start">
-        <Checklist day={day} now={now} settings={settings} run={run} />
-        <div className="space-y-2.5">
-          <ScoreBreakdown day={day} />
-          <QuitPanel quit={quit} />
-          <FocusPanel totals={totals} stats={stats} now={now} run={run} />
-          <SleepPanel day={day} settings={settings} nights={nights?.nights} run={run} />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <FocusTile totals={totals} stats={stats} now={now} run={run} />
+        <SleepTile day={day} settings={settings} nights={nights?.nights} run={run} />
+        <QuitTile quit={quit} />
       </div>
     </div>
   )
@@ -92,62 +108,30 @@ export default function HomePage(): React.JSX.Element {
 
 /* ------------------------------------------------------------------ tier 1 */
 
-function StatusStrip({
-  day,
-  settings,
-  stats
-}: {
-  day: DaySnapshot
-  settings: Settings
-  stats: StatsResult | null
-}): React.JSX.Element {
-  const prayersDone = day.prayers.filter((p) => p.state === 'done').length
-  const prayersLate = day.prayers.filter((p) => p.state === 'late').length
-  const applicable = day.habits.filter((h) => h.applies)
-  const habitsDone = applicable.filter((h) => h.done).length
-  const clean = day.avoid.filter((a) => a.status !== 'slip').length
-  const graceLeft = day.habits.filter((h) => h.streak.graceAvailable).length
-  const spark = (stats?.series ?? []).map((p) => p.score / 100)
+function Header({ day, settings }: { day: DaySnapshot; settings: Settings }): React.JSX.Element {
+  const rollover =
+    settings.dayStartOffsetMin === 0
+      ? 'The day rolls over at Fajr'
+      : `The day rolls over ${settings.dayStartOffsetMin > 0 ? '+' : ''}${settings.dayStartOffsetMin}m from Fajr`
+  const allPrayed = day.prayers.every((p) => p.state === 'done' || p.state === 'late')
 
   return (
-    <div className="h-11 px-[18px] border-b border-line flex items-center gap-6 bg-panel">
-      <div className="flex items-baseline gap-2.5 shrink-0">
-        <span className="micro">Score</span>
-        <span className="num text-[20px] font-medium leading-none">{day.score.total}</span>
-        {spark.length > 1 && <MiniBars values={spark} height={14} className="w-[92px]" />}
+    <header className="flex items-end justify-between gap-4 flex-wrap">
+      <div className="min-w-0">
+        <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] truncate">
+          {formatDateLong(day.date)}
+        </h1>
+        <p className="micro mt-0.5" title={rollover}>
+          Week {isoWeekNumber(day.date)}
+        </p>
       </div>
-
-      <div className="w-px h-5 bg-line" />
-
-      <div className="flex items-center gap-5 min-w-0 overflow-hidden">
-        <Counter
-          label={prayersLate > 0 ? `Prayers · ${prayersLate} late` : 'Prayers'}
-          value={`${prayersDone + prayersLate}/5`}
-        />
-        <Counter label="Habits" value={`${habitsDone}/${applicable.length}`} />
-        <Counter label="Clean" value={`${clean}/${day.avoid.length}`} />
-        <Counter label="Grace left" value={`${graceLeft}/${day.habits.length}`} />
-      </div>
-
-      <div className="ml-auto flex items-center gap-5 shrink-0">
-        <span className="micro">{formatDateLong(day.date)}</span>
-        <span className="micro">
-          Rollover{' '}
-          {settings.dayStartOffsetMin === 0
-            ? 'at Fajr'
-            : `Fajr ${settings.dayStartOffsetMin > 0 ? '+' : ''}${settings.dayStartOffsetMin}m`}
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function Counter({ label, value }: { label: string; value: string }): React.JSX.Element {
-  return (
-    <span className="flex items-baseline gap-2 shrink-0">
-      <span className="micro">{label}</span>
-      <span className="num text-[13px]">{value}</span>
-    </span>
+      {allPrayed && (
+        <Chip tone="done" className="mb-1">
+          <MarkAllPrayers size={13} />
+          All five prayed
+        </Chip>
+      )}
+    </header>
   )
 }
 
@@ -162,7 +146,7 @@ function Hero({
   day: DaySnapshot
   now: number
   settings: Settings
-  run: (fn: () => Promise<unknown>) => void
+  run: Run
 }): React.JSX.Element {
   const open = day.prayers.find((p) => now >= p.start && now < p.end) ?? null
   const next = day.prayers.filter((p) => p.start > now).sort((a, b) => a.start - b.start)[0] ?? null
@@ -170,223 +154,131 @@ function Hero({
   const left = open ? open.end - now : next ? next.start - now : 0
   // Under twenty minutes the countdown turns; it never becomes an alarm.
   const urgent = open != null && open.state !== 'done' && left <= 20 * 60_000
+  const checked = open?.state === 'done' || open?.state === 'late'
+
+  const kicker = open ? (checked ? 'Window open · prayed' : 'Window open') : next ? 'Next' : 'Closed'
+  const countdownTone = !open
+    ? 'text-dim'
+    : checked
+      ? 'text-done'
+      : urgent
+        ? 'text-missed'
+        : 'text-accent'
 
   return (
-    <Panel live pad={false}>
-      <div className="flex flex-col xl:flex-row">
-        <div className="p-6 xl:w-[420px] shrink-0 xl:border-r border-line">
-          <div className="kicker">
+    <Panel live={open != null && !checked} pad={false} className="overflow-hidden">
+      <div className="px-6 pt-5">
+        <DayArc prayers={day.prayers} now={now} settings={settings}>
+          <span className="kicker">{kicker}</span>
+          <span className="text-[27px] leading-tight font-semibold tracking-[-0.02em] mt-1">
+            {subject ? PRAYER_LABELS[subject.prayer] : 'All windows closed'}
+          </span>
+          <Countdown
+            text={subject ? formatDurationShort(left) : '—'}
+            className={`mt-2 ${countdownTone} ${urgent ? 'pulse' : ''}`}
+          />
+          <span className="micro mt-2">
             {open
-              ? open.state === 'done'
-                ? 'Window open · checked'
-                : 'Window open'
-              : 'Next arrival'}
-          </div>
-          <div className="text-[38px] leading-none font-semibold tracking-[-0.01em] mt-3">
-            {subject ? PRAYER_LABELS[subject.prayer] : '—'}
-          </div>
-          <div
-            className={`num text-[66px] leading-none font-medium tracking-[-0.03em] mt-3
-              ${open ? (open.state === 'done' ? 'text-dim' : urgent ? 'text-missed' : 'text-accent') : 'text-dim'}
-              ${urgent ? 'pulse' : ''}`}
+              ? `closes ${formatClock(open.end, settings.timezone)}`
+              : next
+                ? `opens ${formatClock(next.start, settings.timezone)}`
+                : 'until Fajr tomorrow'}
+          </span>
+        </DayArc>
+      </div>
+
+      {open && !checked && (
+        <div className="px-6 pb-1 flex justify-center">
+          <Button
+            size="lg"
+            variant="primary"
+            className="min-w-[220px]"
+            onClick={() => run(() => api.checkPrayer(day.date, open.prayer))}
           >
-            {subject ? formatDurationShort(left) : '—'}
-          </div>
-
-          {open && (
-            <div className="mt-4">
-              <Meter
-                value={Math.min(
-                  100,
-                  ((now - open.start) / Math.max(1, open.end - open.start)) * 100
-                )}
-                tone={open.state === 'done' ? 'done' : urgent ? 'missed' : 'accent'}
-              />
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-3 mt-3">
-            <span className="micro">
-              {open
-                ? `Closes ${formatClock(open.end, settings.timezone)}`
-                : next
-                  ? `Opens ${formatClock(next.start, settings.timezone)}`
-                  : 'All windows closed'}
-            </span>
-            {open && open.state !== 'done' && (
-              <Button
-                variant="primary"
-                onClick={() => run(() => api.checkPrayer(day.date, open.prayer))}
-              >
-                Check {PRAYER_LABELS[open.prayer]}
-              </Button>
-            )}
-          </div>
+            Mark {PRAYER_LABELS[open.prayer]} prayed
+          </Button>
         </div>
+      )}
 
-        <DayRail day={day} now={now} settings={settings} subject={subject} />
+      <div className="px-4 pt-4 pb-2 mt-3 border-t border-line">
+        <PrayerRow
+          prayers={day.prayers}
+          settings={settings}
+          subject={subject}
+          now={now}
+          onToggle={(p) =>
+            run(() =>
+              p.state === 'done' || p.state === 'late'
+                ? api.uncheckPrayer(day.date, p.prayer)
+                : api.checkPrayer(day.date, p.prayer)
+            )
+          }
+        />
       </div>
     </Panel>
   )
 }
 
 /**
- * The day as one 24-hour track.
+ * The countdown, with its units demoted.
  *
- * Bands are positioned by time; their labels are not. The labels sit in an
- * evenly divided five-cell row beneath, because Maghrib and Isha sit close
- * enough together that time-positioned text would collide.
+ * "1h 57m" set entirely at 54px monospace puts a full-width space between the
+ * hours and the minutes and gives the unit letters the same weight as the
+ * figures. Splitting them lets the numbers carry the line.
  */
-function DayRail({
-  day,
-  now,
-  settings,
-  subject
-}: {
-  day: DaySnapshot
-  now: number
-  settings: Settings
-  subject: PrayerStatus | null
-}): React.JSX.Element {
-  const tz = settings.timezone
-  const pct = (ms: number): number => (wallMinutes(ms, tz) / 1440) * 100
-  const nowPct = (wallMinutes(now, tz) / 1440) * 100
-
-  const bandColor = (s: PrayerStatus): string =>
-    s.state === 'done'
-      ? 'var(--done)'
-      : s.state === 'late'
-        ? 'var(--late)'
-        : s.state === 'missed'
-          ? 'var(--missed)'
-          : s.state === 'open'
-            ? 'var(--accent)'
-            : 'var(--wait)'
-
+function Countdown({ text, className = '' }: { text: string; className?: string }): React.JSX.Element {
+  const parts = text.match(/\d+|[a-z]+|—/gi) ?? [text]
   return (
-    <div className="flex-1 min-w-0 px-6 pt-4 pb-[18px]">
-      <div className="flex items-baseline justify-between">
-        <span className="kicker">Day window</span>
-        <span className="micro">
-          {formatClock(now, tz)} · {Math.round(nowPct)}% elapsed
-        </span>
-      </div>
-
-      <div className="relative h-0.5 bg-line-strong mt-[30px]">
-        <div className="absolute left-0 top-0 h-0.5 bg-faint" style={{ width: `${nowPct}%` }} />
-
-        {day.prayers.map((s) => {
-          const start = pct(s.start)
-          // Isha runs past midnight; clamp so its band cannot wrap the track.
-          const rawEnd = pct(s.end)
-          const end = Math.max(start, Math.min(100, rawEnd < start ? 100 : rawEnd))
-          return (
-            <div
-              key={s.prayer}
-              title={`${PRAYER_LABELS[s.prayer]} ${formatClock(s.start, tz)} – ${formatClock(s.end, tz)}`}
-              className="absolute -top-[9px] h-1.5"
-              style={{
-                left: `${start}%`,
-                width: `${Math.max(0.4, end - start)}%`,
-                background: bandColor(s)
-              }}
-            />
-          )
-        })}
-
-        {/* Sunrise is a bare tick: it closes Fajr but is not itself a prayer. */}
-        <div
-          className="absolute top-0.5 w-px h-[9px] bg-line-strong"
-          style={{ left: `${pct(day.prayers[0].end)}%` }}
-          title={`Sunrise ${formatClock(day.prayers[0].end, tz)}`}
-        />
-
-        <div
-          className="absolute -top-[15px] flex flex-col items-center -translate-x-1/2"
-          style={{ left: `${nowPct}%` }}
-        >
-          <span className="num text-[10.5px] text-accent mb-0.5">NOW</span>
-          <span className="w-px h-5 bg-accent" />
-        </div>
-      </div>
-
-      <div className="flex mt-6 border-t border-line">
-        {day.prayers.map((s) => {
-          const isSubject = subject?.prayer === s.prayer
-          const labelColor = isSubject
-            ? 'text-accent'
-            : s.state === 'done'
-              ? 'text-done'
-              : s.state === 'late'
-                ? 'text-late'
-                : s.state === 'missed'
-                  ? 'text-missed'
-                  : 'text-dim'
-          return (
-            <span
-              key={s.prayer}
-              className="flex-1 min-w-0 flex flex-col gap-[3px] pt-[9px] pl-[11px] border-l border-line first:border-l-0 first:pl-0"
-            >
-              <span className={`text-[10.5px] font-bold tracking-[0.11em] uppercase ${labelColor}`}>
-                {PRAYER_LABELS[s.prayer]}
-              </span>
-              <span className={`num text-[13px] ${isSubject ? 'text-fg' : 'text-faint'}`}>
-                {formatClock(s.start, tz)} → {formatClock(s.end, tz)}
-              </span>
-            </span>
-          )
-        })}
-      </div>
-
-      <div className="flex flex-wrap gap-x-[18px] gap-y-1.5 mt-3">
-        <LegendKey label="Done" fill="bg-done" border="border-done" />
-        <LegendKey label="Missed" border="border-missed" />
-        <LegendKey label="Grace day" border="border-grace" />
-        <LegendKey label="Untracked" border="border-line-strong" />
-      </div>
-    </div>
-  )
-}
-
-function LegendKey({
-  label,
-  fill = '',
-  border
-}: {
-  label: string
-  fill?: string
-  border: string
-}): React.JSX.Element {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className={`w-[7px] h-[7px] border ${border} ${fill}`} />
-      <span className="micro">{label}</span>
+    <span className={`num text-[54px] leading-none font-medium tracking-[-0.03em] ${className}`}>
+      {parts.map((part, i) =>
+        /^\d+$/.test(part) ? (
+          <span key={i}>{part}</span>
+        ) : (
+          <span key={i} className="text-[0.42em] opacity-55 ml-[0.06em] mr-[0.22em] last:mr-0">
+            {part}
+          </span>
+        )
+      )}
     </span>
   )
 }
 
 /* ------------------------------------------------------------------ tier 3 */
 
-function Checklist({
-  day,
-  now,
-  settings,
-  run
-}: {
-  day: DaySnapshot
-  now: number
-  settings: Settings
-  run: (fn: () => Promise<unknown>) => void
-}): React.JSX.Element {
+interface Row {
+  key: string
+  /** Which list it came from. Rows are grouped under this, never mixed. */
+  kind: 'habit' | 'avoid'
+  state: CheckState
+  label: string
+  sub?: ReactNode
+  right?: ReactNode
+  onToggle?: () => void
+  onLabelClick?: () => void
+  dim?: boolean
+  /** Settled rows fold away behind a count. */
+  settled: boolean
+  detail?: ReactNode
+}
+
+/**
+ * The habits and the avoid list, as one column in two labelled groups.
+ *
+ * Merging them into a single undifferentiated list was a step too far: "Read 20
+ * minutes" and "No video games" are opposite instructions, and with the same
+ * checkbox and no heading between them the avoid list simply disappeared. They
+ * share the column — one place to look — but each group keeps its own kicker
+ * and its own count, and Avoid counts *clean* rather than done.
+ *
+ * Prayers are no longer listed here at all. They are checked off on the arc's
+ * own row, where their times already are.
+ */
+function OpenList({ day, run }: { day: DaySnapshot; run: Run }): React.JSX.Element {
   const { go } = useNav()
+  const [showSettled, setShowSettled] = useState(false)
   const [expanded, setExpanded] = useState<number | null>(null)
   const [slipFor, setSlipFor] = useState<{ id: number; name: string } | null>(null)
   const [note, setNote] = useState('')
-
-  const applicable = day.habits.filter((h) => h.applies)
-  const prayersDone = day.prayers.filter((p) => p.state === 'done').length
-  const prayersLate = day.prayers.filter((p) => p.state === 'late').length
-  const clean = day.avoid.filter((a) => a.status !== 'slip').length
 
   const logSlip = (): void => {
     if (!slipFor) return
@@ -406,212 +298,173 @@ function Checklist({
       missed: d.tracked && d.applies && !d.done && !d.grace
     }))
 
-  return (
-    <Panel
-      title="Today"
-      pad={false}
-      right={<span className="num text-[11px] text-faint">{day.date}</span>}
-    >
-      <div className="px-4 pt-3 pb-1.5">
-        <Kicker
-          right={
-            <span className="num text-[11px] text-faint">
-              {prayersDone + prayersLate}/5{prayersLate > 0 && ` · ${prayersLate} late`}
-            </span>
-          }
-        >
-          Prayers
-        </Kicker>
-      </div>
-      <div>
-        {day.prayers.map((s) => {
-          const isOpen = now >= s.start && now < s.end
-          // Closed, but still inside the make-up window: the row stays live so
-          // a missed prayer can be recorded as prayed, and undone if mis-tapped.
-          const editable = isOpen || s.canMakeUp
-          return (
-            <CheckRow
-              key={s.prayer}
-              state={s.state}
-              onToggle={
-                editable
-                  ? () =>
-                      run(() =>
-                        s.state === 'done' || s.state === 'late'
-                          ? api.uncheckPrayer(day.date, s.prayer)
-                          : api.checkPrayer(day.date, s.prayer)
-                      )
-                  : undefined
-              }
-              label={PRAYER_LABELS[s.prayer]}
-              right={
-                <span className="flex items-center gap-3 shrink-0">
-                  {isOpen && s.state !== 'done' && (
-                    <span className="w-16">
-                      <Meter
-                        value={((now - s.start) / Math.max(1, s.end - s.start)) * 100}
-                        height={3}
-                      />
-                    </span>
-                  )}
-                  {s.state === 'missed' && s.canMakeUp && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      title="Record this as prayed after its window closed"
-                      onClick={() => run(() => api.checkPrayer(day.date, s.prayer))}
-                    >
-                      Make up
-                    </Button>
-                  )}
-                  <span
-                    className={`num text-[11px] w-[104px] text-right ${
-                      s.state === 'missed'
-                        ? 'text-missed'
-                        : s.state === 'done'
-                          ? 'text-done'
-                          : s.state === 'late'
-                            ? 'text-late'
-                            : s.state === 'open'
-                              ? 'text-accent'
-                              : 'text-faint'
-                    }`}
-                  >
-                    {s.state === 'done' && `logged ${formatClock(s.doneAt, settings.timezone)}`}
-                    {s.state === 'late' && `made up ${formatClock(s.doneAt, settings.timezone)}`}
-                    {s.state === 'missed' && 'MISSED'}
-                    {s.state === 'open' && `${formatDurationShort(s.end - now)} left`}
-                    {s.state === 'upcoming' && formatClock(s.start, settings.timezone)}
-                  </span>
-                </span>
-              }
-            />
-          )
-        })}
-      </div>
+  const rows: Row[] = []
 
-      <div className="px-4 pt-4 pb-1.5 border-t-2 border-line-strong">
-        <Kicker
-          right={
-            <span className="num text-[11px] text-faint">
-              {applicable.filter((h) => h.done).length}/{applicable.length}
-            </span>
-          }
-        >
-          Habits
-        </Kicker>
-      </div>
-      {day.habits.length === 0 ? (
-        <Empty>
-          No habits yet.{' '}
-          <button className="underline cursor-pointer" onClick={() => go('lists')}>
-            Add some
-          </button>
-        </Empty>
-      ) : (
-        <div>
-          {day.habits.map((h) => (
-            <div key={h.habit.id}>
-              <CheckRow
-                state={h.done ? 'done' : h.grace ? 'grace' : 'upcoming'}
-                dim={!h.applies}
-                onToggle={
-                  h.applies
-                    ? () => run(() => api.setHabitDone(day.date, h.habit.id, !h.done))
-                    : undefined
-                }
-                label={h.habit.name}
-                onLabelClick={() => setExpanded(expanded === h.habit.id ? null : h.habit.id)}
-                sub={
-                  !h.applies ? (
-                    'Not scheduled today'
-                  ) : h.grace ? (
-                    <span className="text-grace">Grace day</span>
-                  ) : undefined
-                }
-                right={
-                  <span className="flex items-center gap-3 shrink-0">
-                    <DayStrip days={stripDays(h.history.slice(-7))} />
-                    <StreakBadge current={h.streak.current} record={h.streak.record} />
-                  </span>
+  for (const h of day.habits) {
+    const state: CheckState = h.done ? 'done' : h.grace ? 'grace' : 'upcoming'
+    rows.push({
+      key: `h-${h.habit.id}`,
+      kind: 'habit',
+      state,
+      label: h.habit.name,
+      dim: !h.applies,
+      settled: h.done || h.grace || !h.applies,
+      sub: !h.applies ? 'Not scheduled today' : h.grace ? 'Grace day' : undefined,
+      onToggle: h.applies
+        ? () => run(() => api.setHabitDone(day.date, h.habit.id, !h.done))
+        : undefined,
+      onLabelClick: () => setExpanded(expanded === h.habit.id ? null : h.habit.id),
+      right: <StreakBadge current={h.streak.current} record={h.streak.record} />,
+      detail:
+        expanded === h.habit.id ? (
+          <div className="mx-3 mb-2 px-3.5 py-3 rounded-lg bg-panel-2 pop-in">
+            <div className="flex flex-wrap gap-x-7 gap-y-2 mb-3">
+              <Detail label="Streak" value={String(h.streak.current)} />
+              <Detail label="Record" value={String(h.streak.record)} />
+              <Detail label="This month" value={`${h.monthDone}/${h.monthApplicable}`} />
+              <Detail
+                label="Applies"
+                value={
+                  weekdaysFromMask(h.habit.daysMask).length === 7
+                    ? 'Every day'
+                    : weekdaysFromMask(h.habit.daysMask)
+                        .map((d) => WEEKDAY_NAMES[d])
+                        .join(' ')
                 }
               />
-              {expanded === h.habit.id && (
-                <div className="px-4 py-3 bg-panel-2 border-b border-line">
-                  <div className="flex flex-wrap gap-x-8 gap-y-2 mb-3">
-                    <Detail label="Streak" value={String(h.streak.current)} />
-                    <Detail label="Record" value={String(h.streak.record)} />
-                    <Detail label="This month" value={`${h.monthDone}/${h.monthApplicable}`} />
-                    <Detail
-                      label="Applies"
-                      value={
-                        weekdaysFromMask(h.habit.daysMask).length === 7
-                          ? 'Every day'
-                          : weekdaysFromMask(h.habit.daysMask)
-                              .map((d) => WEEKDAY_NAMES[d])
-                              .join(' ')
-                      }
-                    />
-                    <Detail
-                      label="Grace"
-                      value={h.streak.graceAvailable ? 'Available' : 'Used this month'}
-                    />
-                  </div>
-                  <div className="micro mb-1.5">Last 30 days</div>
-                  <DayStrip tall days={stripDays(h.history)} />
-                </div>
-              )}
+              <Detail label="Grace" value={h.streak.graceAvailable ? 'Available' : 'Used'} />
             </div>
-          ))}
-        </div>
-      )}
+            <div className="micro mb-1.5">Last 30 days</div>
+            <DayStrip tall days={stripDays(h.history)} />
+          </div>
+        ) : undefined
+    })
+  }
 
-      <div className="px-4 pt-4 pb-1.5 border-t-2 border-line-strong">
-        <Kicker
-          right={
-            <span className="num text-[11px] text-faint">
-              {clean}/{day.avoid.length} clean
-            </span>
-          }
-        >
-          Avoid
-        </Kicker>
+  for (const a of day.avoid) {
+    rows.push({
+      key: `a-${a.item.id}`,
+      kind: 'avoid',
+      state: a.status === 'clean' ? 'done' : a.status === 'slip' ? 'missed' : 'upcoming',
+      label: a.item.name,
+      settled: a.status !== null,
+      sub: a.status === 'slip' ? <span className="text-missed">Slip{a.note ? ` — ${a.note}` : ''}</span> : undefined,
+      onToggle: () =>
+        run(() =>
+          api.setAvoidStatus(day.date, a.item.id, a.status === 'clean' ? null : 'clean', null)
+        ),
+      right: (
+        <span className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            title="Log a slip"
+            onClick={() => setSlipFor({ id: a.item.id, name: a.item.name })}
+            className="text-[11.5px] text-faint hover:text-missed px-2 h-6 rounded-md
+              opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
+          >
+            Log slip
+          </button>
+          <StreakBadge current={a.streak.current} record={a.streak.record} />
+        </span>
+      )
+    })
+  }
+
+  const open = rows.filter((r) => !r.settled)
+  const settled = rows.filter((r) => r.settled)
+  const nothingTracked = day.habits.length === 0 && day.avoid.length === 0
+
+  const habitsDone = day.habits.filter((h) => h.applies && h.done).length
+  const habitsApply = day.habits.filter((h) => h.applies).length
+  // Clean means "has not slipped", which is how the score, the week and the
+  // stats all count it. An item nobody has touched today is still clean.
+  const clean = day.avoid.filter((a) => a.status !== 'slip').length
+
+  const render = (r: Row): React.JSX.Element => (
+    <div key={r.key}>
+      <CheckRow
+        state={r.state}
+        onToggle={r.onToggle}
+        onLabelClick={r.onLabelClick}
+        label={r.label}
+        sub={r.sub}
+        right={r.right}
+        dim={r.dim}
+      />
+      {r.detail}
+    </div>
+  )
+
+  /** A group renders only when it has rows, so an empty list leaves no heading. */
+  const group = (rows: Row[], kind: Row['kind'], count: string): React.JSX.Element | null => {
+    const mine = rows.filter((r) => r.kind === kind)
+    if (mine.length === 0) return null
+    return (
+      <div className="px-3 pt-3 first:pt-1.5">
+        <div className="flex items-baseline justify-between gap-3 px-0.5 pb-1">
+          <span className="kicker">{kind === 'habit' ? 'Habits' : 'Avoid'}</span>
+          <span className="num text-[11px] text-faint">{count}</span>
+        </div>
+        <div className="-mx-3">{mine.map(render)}</div>
       </div>
-      {day.avoid.length === 0 ? (
-        <Empty>Nothing on the avoid list.</Empty>
-      ) : (
-        <div>
-          {day.avoid.map((a) => (
-            <CheckRow
-              key={a.item.id}
-              state={a.status === 'clean' ? 'done' : a.status === 'slip' ? 'missed' : 'upcoming'}
-              onToggle={() =>
-                run(() =>
-                  api.setAvoidStatus(day.date, a.item.id, a.status === 'clean' ? null : 'clean', null)
-                )
-              }
-              label={a.item.name}
-              sub={
-                a.status === 'slip' ? (
-                  <span className="text-missed">Slip{a.note ? ` — ${a.note}` : ''}</span>
-                ) : undefined
-              }
-              right={
-                <span className="flex items-center gap-2 shrink-0">
-                  {a.item.isQuitTracker && <span className="micro">Pinned</span>}
-                  <StreakBadge current={a.streak.current} record={a.streak.record} />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    title="Log a slip"
-                    onClick={() => setSlipFor({ id: a.item.id, name: a.item.name })}
+    )
+  }
+
+  return (
+    <Panel
+      title="What's left"
+      pad={false}
+      right={
+        open.length > 0 ? <Chip tone="accent">{open.length}</Chip> : <Chip tone="done">Clear</Chip>
+      }
+    >
+      <div className="pb-1.5">
+        {open.length > 0 ? (
+          <>
+            {group(open, 'habit', `${habitsDone}/${habitsApply} done`)}
+            {group(open, 'avoid', `${clean}/${day.avoid.length} clean`)}
+          </>
+        ) : (
+          <div className="py-10 flex flex-col items-center gap-2.5 text-center pop-in">
+            <MarkAllPrayers size={26} />
+            <p className="text-[15px] font-medium">Nothing left today.</p>
+            <p className="quiet max-w-[280px]">
+              {nothingTracked ? (
+                <>
+                  There is nothing on your lists yet.{' '}
+                  <button
+                    className="underline cursor-pointer hover:text-fg"
+                    onClick={() => go('lists')}
                   >
-                    Log slip
-                  </Button>
-                </span>
-              }
-            />
-          ))}
+                    Add a habit
+                  </button>
+                </>
+              ) : (
+                'Every habit and avoid item is settled.'
+              )}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {settled.length > 0 && (
+        <div className="border-t border-line">
+          <button
+            type="button"
+            onClick={() => setShowSettled(!showSettled)}
+            className="w-full flex items-center gap-2 px-4 h-10 text-dim hover:text-fg
+              transition-colors cursor-pointer"
+          >
+            <IconChevron dir={showSettled ? 'down' : 'right'} size={15} />
+            <span className="text-[12.5px]">Settled</span>
+            <span className="num text-[11.5px] text-faint">{settled.length}</span>
+          </button>
+          {showSettled && (
+            <div className="pb-1.5">
+              {group(settled, 'habit', `${habitsDone}/${habitsApply} done`)}
+              {group(settled, 'avoid', `${clean}/${day.avoid.length} clean`)}
+            </div>
+          )}
         </div>
       )}
 
@@ -642,12 +495,10 @@ function Detail({ label, value }: { label: string; value: string }): React.JSX.E
   return (
     <span className="flex flex-col gap-0.5">
       <span className="micro">{label}</span>
-      <span className="num text-[12px]">{value}</span>
+      <span className="num text-[12.5px]">{value}</span>
     </span>
   )
 }
-
-/* ------------------------------------------------------------------ tier 4 */
 
 /** "3 of 5 in time", plus the make-ups when there are any. */
 function prayerBasis(day: DaySnapshot): string {
@@ -656,15 +507,17 @@ function prayerBasis(day: DaySnapshot): string {
   return late > 0 ? `${done} of 5 in time, ${late} made up` : `${done} of 5 prayed`
 }
 
-function ScoreBreakdown({ day }: { day: DaySnapshot }): React.JSX.Element {
+/**
+ * The score, as a ring and five bars.
+ *
+ * The bars carry their own arithmetic in a tooltip rather than a caption — the
+ * old panel printed a line of prose under every one of the five.
+ */
+function Score({ day, stats }: { day: DaySnapshot; stats: StatsResult | null }): React.JSX.Element {
   const applicable = day.habits.filter((h) => h.applies)
-  const parts: Array<{ label: string; value: number; max: number; basis: string }> = [
-    {
-      label: 'Prayers',
-      value: day.score.prayers,
-      max: 40,
-      basis: prayerBasis(day)
-    },
+  const spark = (stats?.series ?? []).map((p) => p.score / 100)
+  const parts = [
+    { label: 'Prayers', value: day.score.prayers, max: 40, basis: prayerBasis(day) },
     {
       label: 'Habits',
       value: day.score.habits,
@@ -692,26 +545,32 @@ function ScoreBreakdown({ day }: { day: DaySnapshot }): React.JSX.Element {
   ]
 
   return (
-    <Panel
-      title="Score"
-      right={
-        <span className="num text-[13px]">
-          {day.score.total}
-          <span className="text-faint">/100</span>
-        </span>
-      }
-    >
-      <div className="space-y-3">
+    <Panel title="Score">
+      <div className="flex items-center gap-4">
+        <Ring value={day.score.total} size={84} stroke={7}>
+          <span className="num text-[27px] leading-none font-medium">{day.score.total}</span>
+        </Ring>
+        <div className="min-w-0 flex-1">
+          <div className="micro">out of 100</div>
+          {spark.length > 1 && <MiniBars values={spark} height={26} className="mt-2" tone="dim" />}
+        </div>
+      </div>
+
+      <div className="mt-5 space-y-3">
         {parts.map((p) => (
-          <div key={p.label}>
+          <div key={p.label} title={p.basis}>
             <div className="flex items-baseline justify-between gap-2 mb-1.5">
-              <span className="text-[12px]">{p.label}</span>
-              <span className="num text-[11px] text-faint">
+              <span className="text-[12.5px] text-dim">{p.label}</span>
+              <span className="num text-[11.5px] text-faint">
                 {p.value}/{p.max}
               </span>
             </div>
-            <Meter value={p.value} max={p.max} height={3} tone={p.value === p.max ? 'done' : 'accent'} />
-            <div className="quiet mt-1">{p.basis}</div>
+            <Meter
+              value={p.value}
+              max={p.max}
+              height={4}
+              tone={p.value === p.max ? 'done' : 'accent'}
+            />
           </div>
         ))}
       </div>
@@ -719,47 +578,81 @@ function ScoreBreakdown({ day }: { day: DaySnapshot }): React.JSX.Element {
   )
 }
 
-function QuitPanel({ quit }: { quit: QuitStats | null }): React.JSX.Element {
-  const { go } = useNav()
-  if (!quit) return <Panel title="Smoke-free">{null}</Panel>
+/* ------------------------------------------------------------------ tier 4 */
 
-  if (!quit.quitDate) {
-    return (
-      <Panel title="Smoke-free">
-        <p className="quiet mb-3">Set a quit date to start the counter.</p>
-        <Button size="sm" variant="ghost" onClick={() => go('settings')}>
-          Open settings
-        </Button>
-      </Panel>
-    )
-  }
-
+/** The shared shape of the three bottom tiles: icon, figure, meta, action. */
+function Tile({
+  icon,
+  title,
+  live,
+  onDetails,
+  children
+}: {
+  icon: ReactNode
+  title: string
+  live?: boolean
+  onDetails?: () => void
+  children: ReactNode
+}): React.JSX.Element {
   return (
-    <Panel title="Smoke-free" right={<MarkSmokeFree />}>
-      <div className="flex items-baseline gap-2">
-        <span className="num text-[36px] leading-none font-medium text-accent">{quit.days}</span>
-        <span className="text-[11px] text-faint">{quit.days === 1 ? 'day' : 'days'}</span>
-      </div>
-      <dl className="mt-4 space-y-2">
-        <RailRow label="Not smoked" value={quit.cigarettesAvoided.toLocaleString('en-US')} />
-        <RailRow label="Saved" value={formatMoney(quit.moneySaved, quit.currency)} />
-        <RailRow label="Since" value={quit.quitDate} />
-        <RailRow label="Streak" value={`${quit.streak.current} / ${quit.streak.record}`} />
-      </dl>
+    <Panel
+      live={live}
+      className="h-full flex flex-col"
+      bodyClass="flex-1 flex flex-col"
+      title={
+        <span className="flex items-center gap-2">
+          <span className="text-faint">{icon}</span>
+          {title}
+        </span>
+      }
+      right={
+        onDetails && (
+          <button
+            className="micro hover:text-fg cursor-pointer transition-colors"
+            onClick={onDetails}
+          >
+            Details
+          </button>
+        )
+      }
+    >
+      {children}
     </Panel>
   )
 }
 
-function RailRow({ label, value }: { label: string; value: string }): React.JSX.Element {
+/** A week shape, unless the week is empty — then it is seven grey boxes. */
+function WeekShape({
+  values,
+  tone
+}: {
+  values: number[]
+  tone?: 'accent' | 'dim'
+}): React.JSX.Element | null {
+  if (values.length === 0 || values.every((v) => v <= 0)) return null
+  return <MiniBars values={values} className="mt-3.5" height={24} tone={tone} />
+}
+
+function Figure({
+  value,
+  unit,
+  tone = ''
+}: {
+  value: string
+  unit?: string
+  tone?: string
+}): React.JSX.Element {
   return (
-    <div className="flex justify-between gap-3 items-baseline">
-      <dt className="micro">{label}</dt>
-      <dd className="num text-[12px]">{value}</dd>
+    <div className="flex items-baseline gap-1.5">
+      <span className={`num text-[34px] leading-none font-medium tracking-[-0.03em] ${tone}`}>
+        {value}
+      </span>
+      {unit && <span className="text-[12px] text-faint">{unit}</span>}
     </div>
   )
 }
 
-function FocusPanel({
+function FocusTile({
   totals,
   stats,
   now,
@@ -768,7 +661,7 @@ function FocusPanel({
   totals: WorkTotals | null
   stats: StatsResult | null
   now: number
-  run: (fn: () => Promise<unknown>) => void
+  run: Run
 }): React.JSX.Element {
   const { go } = useNav()
   const [starting, setStarting] = useState(false)
@@ -794,46 +687,37 @@ function FocusPanel({
   }
 
   return (
-    <Panel
-      title="Focused work"
-      live={running != null}
-      right={
-        <button className="micro hover:text-fg cursor-pointer" onClick={() => go('work')}>
-          Details
-        </button>
-      }
-    >
+    <Tile icon={<IconWork size={15} />} title="Focus" live={running != null} onDetails={() => go('work')}>
       {running ? (
         <>
-          <div className="num text-[36px] leading-none font-medium text-accent">
-            {formatStopwatch(now - running.startedAt)}
-          </div>
+          <Figure value={formatStopwatch(now - running.startedAt)} tone="text-accent" />
           <div className="quiet mt-2 truncate">{running.project}</div>
         </>
       ) : (
         <>
-          <div className="num text-[36px] leading-none font-medium">
-            {totals && totals.todaySeconds > 0 ? formatSecondsAsHours(totals.todaySeconds) : '—'}
+          <Figure
+            value={totals && totals.todaySeconds > 0 ? formatSecondsAsHours(totals.todaySeconds) : '—'}
+            unit={totals && totals.todaySeconds > 0 ? 'today' : undefined}
+          />
+          <div className="quiet mt-2">
+            {totals && totals.weekSeconds > 0
+              ? `${formatSecondsAsHours(totals.weekSeconds)} this week`
+              : 'Nothing logged yet'}
           </div>
-          <div className="micro mt-2">Today</div>
         </>
       )}
 
-      {week.length > 0 && (
-        <MiniBars values={week.map((d) => d.workSeconds / peak)} className="mt-3.5" height={22} />
-      )}
+      <WeekShape values={week.map((d) => d.workSeconds / peak)} />
 
-      <dl className="mt-3 space-y-2">
-        <RailRow label="This week" value={totals ? formatSecondsAsHours(totals.weekSeconds) : '—'} />
-      </dl>
-
-      <div className="mt-4">
+      <div className="mt-auto pt-4">
         {running ? (
-          <Button className="w-full justify-center" onClick={() => setStopping(true)}>
+          <Button className="w-full" onClick={() => setStopping(true)}>
+            <IconStop size={13} />
             Stop
           </Button>
         ) : (
-          <Button variant="primary" className="w-full" onClick={() => setStarting(true)}>
+          <Button className="w-full" onClick={() => setStarting(true)}>
+            <IconPlay size={13} />
             Start work
           </Button>
         )}
@@ -854,13 +738,13 @@ function FocusPanel({
           ))}
         </datalist>
         {(projects ?? []).length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2.5">
+          <div className="flex flex-wrap gap-1.5 mt-3">
             {(projects ?? []).slice(0, 6).map((p) => (
               <button
                 key={p}
                 onClick={() => setProject(p)}
-                className="text-[11px] px-2 h-6 border border-line text-dim
-                  hover:border-accent hover:text-fg cursor-pointer"
+                className="text-[11.5px] px-2.5 h-7 rounded-full bg-panel-2 text-dim
+                  hover:text-fg hover:bg-accent-ghost cursor-pointer transition-colors"
               >
                 {p}
               </button>
@@ -898,11 +782,11 @@ function FocusPanel({
           </Button>
         </div>
       </Modal>
-    </Panel>
+    </Tile>
   )
 }
 
-function SleepPanel({
+function SleepTile({
   day,
   settings,
   nights,
@@ -911,7 +795,7 @@ function SleepPanel({
   day: DaySnapshot
   settings: Settings
   nights: SleepNight[] | undefined
-  run: (fn: () => Promise<unknown>) => void
+  run: Run
 }): React.JSX.Element {
   const { go } = useNav()
   const sleep = day.sleep
@@ -920,39 +804,69 @@ function SleepPanel({
       ? Math.round((sleep.wakeAt - sleep.sleepAt) / 60_000)
       : null
   const chart = (nights ?? []).map((n) => (n.durationMin ?? 0) / (10 * 60))
+  const logged = sleep?.sleepAt != null || sleep?.wakeAt != null
 
   return (
-    <Panel
-      title="Sleep"
-      right={
-        <button className="micro hover:text-fg cursor-pointer" onClick={() => go('sleep')}>
-          Details
-        </button>
-      }
-    >
-      <div
-        className={`num text-[36px] leading-none font-medium ${
-          minutes == null ? 'text-faint' : day.sleepOnTarget ? 'text-done' : ''
-        }`}
-      >
-        {minutes != null ? formatHoursMinutes(minutes) : '—'}
+    <Tile icon={<IconSleep size={15} />} title="Sleep" onDetails={() => go('sleep')}>
+      <Figure
+        value={minutes != null ? formatHoursMinutes(minutes) : '—'}
+        unit={minutes != null ? 'last night' : undefined}
+        tone={minutes == null ? 'text-faint' : day.sleepOnTarget ? 'text-done' : ''}
+      />
+      <div className="quiet mt-2">
+        {logged
+          ? `${formatClock(sleep?.sleepAt, settings.timezone)} → ${formatClock(sleep?.wakeAt, settings.timezone)}`
+          : `Target ${settings.targetBedtime}–${settings.targetWakeTime}`}
       </div>
-      {chart.length > 0 && <MiniBars values={chart} className="mt-3.5" height={22} tone="dim" />}
 
-      <dl className="mt-3 space-y-2">
-        <RailRow label="Slept" value={formatClock(sleep?.sleepAt, settings.timezone)} />
-        <RailRow label="Woke" value={formatClock(sleep?.wakeAt, settings.timezone)} />
-        <RailRow label="Target" value={`${settings.targetBedtime}–${settings.targetWakeTime}`} />
-      </dl>
+      <WeekShape values={chart} tone="dim" />
 
-      <div className="mt-4 flex gap-2">
-        <Button className="flex-1 justify-center" onClick={() => run(() => api.goingToSleep())}>
+      <div className="mt-auto pt-4 flex gap-2">
+        <Button className="flex-1" onClick={() => run(() => api.goingToSleep())}>
           To sleep
         </Button>
-        <Button className="flex-1 justify-center" onClick={() => run(() => api.wokeUp())}>
+        <Button className="flex-1" onClick={() => run(() => api.wokeUp())}>
           Woke up
         </Button>
       </div>
-    </Panel>
+    </Tile>
+  )
+}
+
+function QuitTile({ quit }: { quit: QuitStats | null }): React.JSX.Element {
+  const { go } = useNav()
+
+  if (!quit) return <Tile icon={<MarkSmokeFree size={15} />} title="Smoke-free">{null}</Tile>
+
+  if (!quit.quitDate) {
+    return (
+      <Tile icon={<MarkSmokeFree size={15} />} title="Smoke-free">
+        <Figure value="—" />
+        <p className="quiet mt-2">Set a quit date to start the counter.</p>
+        <Button className="w-full mt-auto" onClick={() => go('settings')}>
+          Open settings
+        </Button>
+      </Tile>
+    )
+  }
+
+  return (
+    <Tile icon={<MarkSmokeFree size={15} />} title="Smoke-free">
+      <Figure
+        value={String(quit.days)}
+        unit={quit.days === 1 ? 'day' : 'days'}
+        tone="text-accent"
+      />
+      <div className="quiet mt-2">since {quit.quitDate}</div>
+
+      <div className="mt-auto pt-4 flex flex-wrap gap-1.5">
+        <Chip>
+          <IconMoney size={12} />
+          {formatMoney(quit.moneySaved, quit.currency)} saved
+        </Chip>
+        <Chip>{quit.cigarettesAvoided.toLocaleString('en-US')} not smoked</Chip>
+        <StreakBadge current={quit.streak.current} record={quit.streak.record} />
+      </div>
+    </Tile>
   )
 }

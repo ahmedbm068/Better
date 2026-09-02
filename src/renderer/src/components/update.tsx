@@ -51,7 +51,7 @@ export function UpdatePanel({
   return (
     <Panel
       title="Updates"
-      right={<span className="micro text-faint">VERSION {version}</span>}
+      right={<span className="micro text-faint">Version {version}</span>}
     >
       {status === null ? (
         <span className="quiet">Loading…</span>
@@ -111,7 +111,7 @@ export function UpdatePanel({
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={check} disabled={action.busy || status.state === 'checking'}>
-                  {action.busy || status.state === 'checking' ? 'CHECKING…' : 'CHECK NOW'}
+                  {action.busy || status.state === 'checking' ? 'Checking…' : 'Check now'}
                 </Button>
               </div>
             </>

@@ -111,7 +111,7 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
       title="Account"
       right={
         <span className="micro text-faint">
-          {status.signedIn ? (status.pending ? 'CHANGES QUEUED' : 'UP TO DATE') : 'LOCAL ONLY'}
+          {status.signedIn ? (status.pending ? 'Changes queued' : 'Up to date') : 'Local only'}
         </span>
       }
     >
@@ -119,15 +119,15 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <span className="micro block mb-1">SIGNED IN AS</span>
+              <span className="micro block mb-1">Signed in as</span>
               <span className="text-sm break-all">{status.email ?? 'this account'}</span>
             </div>
             <div>
-              <span className="micro block mb-1">SERVER</span>
+              <span className="micro block mb-1">Server</span>
               <span className="text-sm break-all">{status.server}</span>
             </div>
             <div>
-              <span className="micro block mb-1">LAST SYNC</span>
+              <span className="micro block mb-1">Last sync</span>
               <span className="text-sm">{ago(status.lastSyncAt, now)}</span>
             </div>
           </div>
@@ -135,7 +135,7 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
           {settingPassword ? (
             <div className="space-y-3">
               <Field
-                label="NEW PASSWORD"
+                label="New password"
                 hint={`At least ${MIN_PASSWORD_LENGTH} characters. Length is what makes one hard to guess.`}
               >
                 <input
@@ -151,7 +151,7 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
                   variant="primary"
                   disabled={action.busy || newPassword.length < MIN_PASSWORD_LENGTH}
                 >
-                  SAVE PASSWORD
+                  Save password
                 </Button>
                 <Button onClick={() => setSettingPassword(false)} variant="ghost">
                   CANCEL
@@ -161,11 +161,11 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
           ) : (
             <div className="flex flex-wrap gap-2">
               <Button onClick={syncNow} disabled={action.busy}>
-                {action.busy ? 'SYNCING…' : 'SYNC NOW'}
+                {action.busy ? 'Syncing…' : 'Sync now'}
               </Button>
-              <Button onClick={() => setSettingPassword(true)}>SET A PASSWORD</Button>
+              <Button onClick={() => setSettingPassword(true)}>Set a password</Button>
               <Button onClick={signOut} variant="danger" disabled={action.busy}>
-                SIGN OUT
+                Sign out
               </Button>
             </div>
           )}
@@ -198,14 +198,14 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
                 <Button onClick={withProvider('google')} variant="primary" disabled={action.busy}>
-                  CONTINUE WITH GOOGLE
+                  Continue with Google
                 </Button>
                 <Button onClick={withProvider('github')} disabled={action.busy}>
-                  CONTINUE WITH GITHUB
+                  Continue with GitHub
                 </Button>
               </div>
               <Button onClick={() => setMode('password')} variant="ghost">
-                I ALREADY HAVE A PASSWORD
+                I already have a password
               </Button>
             </div>
           ) : (
@@ -219,7 +219,7 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </Field>
-              <Field label="PASSWORD">
+              <Field label="Password">
                 <input
                   type="password"
                   value={password}
@@ -236,7 +236,7 @@ export function SyncPanel({ platform }: { platform: string }): React.JSX.Element
                   variant="primary"
                   disabled={action.busy || !email.trim() || !password}
                 >
-                  {action.busy ? 'SIGNING IN…' : 'SIGN IN'}
+                  {action.busy ? 'Signing in…' : 'Sign in'}
                 </Button>
                 <Button onClick={() => setMode('choose')} variant="ghost">
                   BACK

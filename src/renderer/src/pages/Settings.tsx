@@ -1,12 +1,18 @@
 /** Settings, and the backup controls. Everything here stays on this machine. */
 import { useEffect, useState } from 'react'
-import type { CalcMethod, Settings } from '@shared/types'
-import { CALC_METHOD_LABELS, CALC_METHODS } from '@shared/types'
+import type { CalcMethod, Settings, Theme } from '@shared/types'
+import { CALC_METHOD_LABELS, CALC_METHODS, THEME_LABELS, THEMES } from '@shared/types'
+import {
+  SUN_PHASE_LABELS,
+  daylightAt,
+  sunPhaseAt,
+  sunTimesFromPrayers
+} from '@shared/daylight'
 import { formatClock } from '@shared/format'
 import type { FileResult } from '@shared/api'
 import { api } from '../lib/api'
-import { useAction, useAsync } from '../lib/hooks'
-import { Button, Field, Note, Panel, Toggle } from '../components/ui'
+import { useAction, useAsync, useNow } from '../lib/hooks'
+import { Button, Field, Note, Panel, Segmented, Toggle } from '../components/ui'
 import { SyncPanel } from '../components/sync'
 import { UpdatePanel } from '../components/update'
 
@@ -265,11 +271,7 @@ export default function SettingsPage(): React.JSX.Element {
       </Panel>
 
       <Panel title="Application">
-        <Toggle
-          checked={draft.theme === 'dark'}
-          label="Dark theme"
-          onChange={(v) => commit('theme', v ? 'dark' : 'light')}
-        />
+        <ThemePicker theme={draft.theme} onPick={(v) => commit('theme', v)} />
         <Toggle
           checked={draft.minimizeToTray}
           label="Closing the window minimises to the tray"
@@ -337,6 +339,62 @@ function Row({ label, value }: { label: string; value: string }): React.JSX.Elem
     <div className="flex gap-3">
       <dt className="text-faint w-[130px] shrink-0">{label}</dt>
       <dd className="num break-all">{value}</dd>
+    </div>
+  )
+}
+
+
+/**
+ * Theme mode, with the solar option showing its own working.
+ *
+ * "Follow the sun" is the only one that needs explaining, so it is the only one
+ * that gets a line of explanation — and rather than describe the idea in the
+ * abstract, the hint reports what the sun is doing right now and what that has
+ * done to the palette. It is the setting demonstrating itself.
+ */
+function ThemePicker({
+  theme,
+  onPick
+}: {
+  theme: Theme
+  onPick: (theme: Theme) => void
+}): React.JSX.Element {
+  const now = useNow(60_000)
+  const { data: today } = useAsync(() => api.currentDate(), [])
+  const { data: day } = useAsync(
+    () => (today ? api.getDay(today) : Promise.resolve(null)),
+    [today]
+  )
+  const sun = day ? sunTimesFromPrayers(day.prayers) : null
+
+  const hint = (): string => {
+    if (theme !== 'solar') return 'A fixed palette, the same at every hour.'
+    if (!sun) return 'The sun cannot be worked out for this location, so night is used.'
+    const phase = SUN_PHASE_LABELS[sunPhaseAt(now, sun)]
+    return `${phase} where you are — ${Math.round(daylightAt(now, sun) * 100)}% daylight.`
+  }
+
+  return (
+    <div className="py-3 border-b border-line">
+      <div className="flex items-center justify-between gap-4 mb-2.5">
+        <div className="min-w-0">
+          <div>Theme</div>
+          <div className="quiet mt-0.5">{hint()}</div>
+        </div>
+      </div>
+      <Segmented
+        label="Theme"
+        value={theme}
+        onChange={onPick}
+        options={THEMES.map((t) => ({
+          value: t,
+          label: THEME_LABELS[t],
+          title:
+            t === 'solar'
+              ? 'Grades between light and dark with the real sunrise and sunset at your coordinates'
+              : undefined
+        }))}
+      />
     </div>
   )
 }

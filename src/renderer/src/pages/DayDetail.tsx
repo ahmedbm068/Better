@@ -227,10 +227,10 @@ export default function DayDetailPage({ date }: { date: DateStr }): React.JSX.El
                         : s.state === 'late'
                           ? `made up ${formatClock(s.doneAt, tz)}`
                           : s.state === 'missed'
-                            ? 'MISSED'
+                            ? 'missed'
                             : s.state === 'open'
-                              ? 'OPEN'
-                              : 'UPCOMING'}
+                              ? 'open'
+                              : 'upcoming'}
                   </span>
                   {/* The one thing a past day still allows. Yesterday's Isha is
                       only reachable here, because Today has moved on. */}

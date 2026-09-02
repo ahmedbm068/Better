@@ -16,47 +16,83 @@ about fifteen seconds at a time, to answer: *what do I still have to do today?*
 
 ## The feeling it must have
 
-It is an **instrument**, not a consumer habit app. Think aircraft panel, trading
-terminal, or a good CLI — calm, dense where density earns its place, and honest.
+Calm, quiet and legible. It is opened for fifteen seconds at a time by someone
+who wants one question answered, so it should feel like a good clock: composed,
+unhurried, and pleasant to look at.
 
-Hard rules:
+An earlier version of this brief asked for an aircraft panel or a trading
+terminal. That was a mistake, and the build that came out of it read as a
+laboratory instrument — every label shouted in capitals, nothing had a corner,
+and nine panels competed on one plane. **That direction is retired.** What
+replaced it:
 
-- **No emoji. No mascots. No illustrations. No motivational quotes.** Ever.
+- **Softness carries the calm.** Rounded cards, one real elevation step, and
+  space between unrelated things. Depth is a panel ground plus a hairline
+  highlight, not a cage of 1px rules.
+- **Sentence case.** Capitals and monospace are for numbers and the occasional
+  section kicker. A label that shouts as loudly as the data it introduces is
+  noise.
+- **Scale does the ranking.** One focal point per screen at a size nothing else
+  comes near, and everything settled folded away behind a count.
+- **Motion is functional.** Things that arrive, rise; a check draws itself; the
+  live thing breathes. Nothing moves for decoration, and everything respects
+  `prefers-reduced-motion`.
+
+Hard rules, unchanged:
+
+- **No emoji. No mascots.** Ever.
+- **One quote a day, and no more than that.** The app carries a short line on
+  Today, shown full screen once on opening and then parked in its own card. It
+  is the one soft thing here, so it stays disciplined: two lines at most, never
+  attributed, never scripture, and never anything a Muslim reader would have to
+  disagree with — no fate, no luck, no universe that provides, nothing that
+  names divinity, and no claim over outcomes. The rules and the tests that hold
+  them are in `src/shared/quotes.ts` and `tests/quotes.test.ts`.
 - **No guilt language.** A missed prayer says "missed" and nothing more. Never
   "You failed", never a red shame banner, never a sad state. Facts only, stated
   flatly. The data does the persuading.
-- **One accent colour.** Currently amber `#E8A33D`. You may propose a different
-  single accent, but only one, plus muted semantic colours for done/missed.
+- **One accent colour**, plus muted semantic colours for done / late / missed /
+  grace. The ground is a deep indigo night and the accent is the warm gold of
+  first light; a cool ground under a warm accent is what makes the live thing
+  read as lit rather than merely coloured. A second accent exists only for the
+  night end of the day arc.
 - **Monospace, tabular figures for every number**, timer, countdown and clock.
   Prose stays in a sans stack.
 - **System font stacks only.** The app is offline and fetches nothing — no
-  Google Fonts, no icon fonts, no CDN. If you want icons, they must be simple
-  inline SVG shapes I can hand-write, or geometric CSS shapes.
-- **Dark theme is the default**; a light theme must work from the same tokens.
+  Google Fonts, no icon fonts, no CDN. Icons are hand-written inline SVG on one
+  geometry: a 24 grid, 1.6 stroke, round caps, `currentColor`.
+- **Dark theme is the default**; a light theme must work from the same tokens,
+  and a third mode, **Follow the sun**, grades between them using the real
+  sunrise and sunset at the user's coordinates — the same solar events the
+  prayer times are built from, so the theme and the day arc read one sky.
+  It grades *within* a polarity and inverts once at the sun's crossing: light
+  text on dark and dark text on light meet as the same grey halfway between, so
+  a straight interpolation goes blind in the middle (measured at 1.07:1).
 
-## The problem you are solving
+## The problem that was solved
 
-The current build is correct but unfriendly. Its faults, specifically:
+The build before this one was correct but unfriendly. Its faults, and what
+answered them:
 
-1. **Nine panels on the home screen at once.** No visual hierarchy — the prayer
-   countdown, which is the single most important thing, competes with seven
-   other cards for attention.
-2. **Everything is on one plane.** Three-column rows of dense lists, all at the
-   same weight, all shouting equally.
-3. **Rows are overloaded.** A single habit row carries a checkbox, a name, a
-   seven-dot history strip, a streak count, a record count, and a button.
-4. **Type is too small and too uniform.** 13px body, 10px labels, almost no
-   scale contrast, so nothing reads as more important than anything else.
-5. **Not enough whitespace.** Everything is 12–16px apart regardless of whether
-   the things are related.
+1. **Nine panels on the home screen at once**, with no hierarchy — the prayer
+   countdown competed with seven other cards. *Now four tiers: header, the day
+   arc, one list beside the score, and three tiles.*
+2. **Everything on one plane.** *Now one focal point, and everything already
+   dealt with collapses behind a "Settled" count.*
+3. **Rows were overloaded** — checkbox, name, seven-dot strip, streak, record
+   and a button on a single habit row. *The strip moved into the expanded row;
+   the slip action appears on hover.*
+4. **Type was too small and too uniform**, 13px body against 10px labels. *The
+   countdown is 54px, the date 26px, body 14px, and nothing renders below 11px.*
+5. **Not enough whitespace**, everything 12–16px apart whether related or not.
 
-Fix these with **hierarchy and progressive disclosure**, not by deleting
-features. Every capability listed below must still be reachable. Secondary
-detail can move behind a tab, a hover, an expandable row, or its own page — but
-it cannot disappear.
+These were fixed with **hierarchy and progressive disclosure**, not by deleting
+features. Every capability listed below is still reachable. Secondary detail may
+live behind a hover, an expandable row, or its own page — but it cannot
+disappear.
 
-Aim for: **one obvious focal point per screen**, at most three or four regions
-competing for attention, and a clear reading order.
+Hold the line at: **one obvious focal point per screen**, at most three or four
+regions competing for attention, and a clear reading order.
 
 ## The screens
 
@@ -64,10 +100,12 @@ competing for attention, and a clear reading order.
 
 Opened on launch. In one glance it must answer four questions:
 
-- **What prayer is next and how long do I have?** This is the hero. A live
-  countdown like "Asr — 1h 42m left" plus the time the window closes and what
-  comes next. Make it unmistakably the largest thing on screen. When a window is
-  nearly closed it should read as urgent without turning into an alarm.
+- **What prayer is next and how long do I have?** This is the hero: the **day
+  arc**, a 140-degree bow spanning Fajr to the close of Isha, carrying the five
+  windows as coloured bands with the present moment travelling along it, and the
+  countdown set inside its bowl. It is unmistakably the largest thing on screen.
+  When a window is nearly closed it reads as urgent without turning into an
+  alarm. The arc is also the mark, drawn again at 24px.
 - **What is still unchecked today?**
 - **How many days smoke-free?**
 - **How long have I worked today?**
@@ -76,12 +114,15 @@ Must contain, somewhere: the five prayers with their times and states; the daily
 habit checklist with a 7-day history strip and streak per habit; the avoid list
 with a "clean" confirmation and a way to log a slip with a one-line note; the
 pinned smoke-free counter with money saved; today's and this week's focused
-time with a large START WORK button; sleep times with "Going to sleep" and
-"Woke up" buttons; and today's score out of 100.
+time with a start-work button; sleep times with "To sleep" and "Woke up"
+buttons; and today's score out of 100.
 
-That is a lot. **Group it and rank it.** A single unified "today checklist"
-merging prayers, habits and avoid into one scannable column is worth exploring,
-with the rest demoted to a narrow secondary rail.
+That is a lot, so it is grouped and ranked. Prayers, habits and avoid merge into
+one **"What's left"** column: only what is still open, with everything settled
+folded behind a count. A prayer whose window has not opened is not listed at
+all — the arc already shows all five. The score sits beside the list as a ring
+and five bars, and focus, sleep and the quit counter are three equal tiles
+below.
 
 ### 2. Calendar
 
@@ -105,8 +146,8 @@ read-only except the note. Needs an obvious way back.
 
 ### 5. Work
 
-A start/stop timer. Big START WORK button; naming a session with autocomplete
-from previous project names; a running stopwatch; STOP with an optional one-line
+A start/stop timer. A start-work button; naming a session with autocomplete
+from previous project names; a running stopwatch; stop with an optional one-line
 note. Today's session log with edit and delete. A bar chart of totals per week
 or per month, and hours ranked per project.
 
@@ -175,4 +216,9 @@ It will be rebuilt in React + TypeScript + Tailwind CSS v4, inside Electron.
 - Charts are hand-written inline SVG — no charting library. Keep them simple:
   bars, lines, scatter dots, a heatmap grid.
 - No external images, fonts, or network requests of any kind.
-- Prefer flat surfaces and 1px borders over heavy shadows and gradients.
+- Depth is the `bg` / `panel` / `panel2` ground steps plus one soft shadow and a
+  hairline top highlight. Gradients are reserved for the day arc, where they
+  mean something: night warming into light.
+- Motion lives in the token sheet as named keyframes (`rise`, `pop`, `draw`,
+  `breathe`) with a `prefers-reduced-motion` escape, so no component invents its
+  own.

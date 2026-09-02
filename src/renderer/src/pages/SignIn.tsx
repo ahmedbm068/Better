@@ -16,6 +16,7 @@ import { DOWNLOAD_URL } from '@shared/config'
 import { useAction } from '../lib/hooks'
 import { api } from '../lib/api'
 import { Button, Field, Note } from '../components/ui'
+import { Logo } from '../components/icons'
 
 const MIN_PASSWORD_LENGTH = 10
 
@@ -45,7 +46,10 @@ export default function SignInPage({
     <div className="min-h-full grid place-items-center px-5 py-10">
       <div className="w-full max-w-[380px]">
         <header className="mb-7 text-center">
-          <div className="num text-accent font-bold tracking-[0.2em] text-[15px]">BETTER</div>
+          <div className="flex items-center justify-center gap-2.5">
+            <Logo size={26} className="text-fg" />
+            <span className="text-[19px] font-semibold tracking-[-0.01em]">Better</span>
+          </div>
           <p className="quiet mt-2">Prayers, habits, sleep and work — one honest score a day.</p>
         </header>
 
@@ -56,7 +60,7 @@ export default function SignInPage({
             withPassword()
           }}
         >
-          <Field label="EMAIL">
+          <Field label="Email">
             <input
               type="email"
               value={email}
@@ -67,7 +71,7 @@ export default function SignInPage({
             />
           </Field>
 
-          <Field label="PASSWORD">
+          <Field label="Password">
             <input
               type="password"
               value={password}
@@ -83,7 +87,7 @@ export default function SignInPage({
             className="w-full"
             disabled={action.busy || !ready}
           >
-            {action.busy ? 'SIGNING IN…' : 'SIGN IN'}
+            {action.busy ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
 
@@ -95,7 +99,7 @@ export default function SignInPage({
 
         <div className="flex items-center gap-3 my-6">
           <span className="h-px flex-1 bg-line" />
-          <span className="micro text-faint">NEW HERE</span>
+          <span className="micro text-faint">New here</span>
           <span className="h-px flex-1 bg-line" />
         </div>
 
@@ -106,7 +110,7 @@ export default function SignInPage({
             className="w-full"
             disabled={action.busy}
           >
-            CONTINUE WITH GOOGLE
+            Continue with Google
           </Button>
           <Button
             onClick={withProvider('github')}
@@ -114,7 +118,7 @@ export default function SignInPage({
             className="w-full"
             disabled={action.busy}
           >
-            CONTINUE WITH GITHUB
+            Continue with GitHub
           </Button>
           <p className="quiet text-center pt-1">
             Creating an account this way sets no password. You can add one
@@ -123,7 +127,7 @@ export default function SignInPage({
         </div>
 
         <div className="mt-7 pt-5 border-t border-line">
-          <div className="micro mb-1.5">ON WINDOWS</div>
+          <div className="micro mb-1.5">On Windows</div>
           <p className="quiet mb-3">
             The desktop app runs offline, keeps its own copy of your data, and
             reminds you before a prayer window closes — which a browser tab
@@ -131,9 +135,10 @@ export default function SignInPage({
           </p>
           <a
             href={DOWNLOAD_URL}
-            className="inline-block w-full text-center border border-line px-3 py-2 text-[12.5px] tracking-wide hover:border-line-strong"
+            className="inline-block w-full text-center rounded-md border border-line bg-panel-2
+              px-3 py-2.5 text-[13px] hover:border-line-strong hover:bg-panel transition-colors"
           >
-            DOWNLOAD FOR WINDOWS
+            Download for Windows
           </a>
         </div>
 

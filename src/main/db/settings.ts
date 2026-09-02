@@ -1,6 +1,6 @@
 /** Typed settings store. Every value is a JSON blob in the `settings` table. */
 import type { Settings } from '@shared/types'
-import { CALC_METHODS, MADHABS } from '@shared/types'
+import { CALC_METHODS, MADHABS, THEMES } from '@shared/types'
 import { getDb } from './handle'
 import { systemZone } from '@shared/time'
 
@@ -76,7 +76,7 @@ function sanitize(s: Settings): Settings {
     madhab: MADHABS.includes(s.madhab) ? s.madhab : DEFAULT_SETTINGS.madhab,
     dayStartOffsetMin: clamp(Number(s.dayStartOffsetMin), -180, 180, 0),
     trackingStartDate: isDateStr(s.trackingStartDate) ? s.trackingStartDate : null,
-    theme: s.theme === 'light' ? 'light' : 'dark',
+    theme: THEMES.includes(s.theme) ? s.theme : DEFAULT_SETTINGS.theme,
     notifyOnWindowOpen: Boolean(s.notifyOnWindowOpen),
     notifyLeadMinutes: Array.isArray(s.notifyLeadMinutes)
       ? [...new Set(s.notifyLeadMinutes.map(Number).filter((n) => n > 0 && n <= 720))].sort(

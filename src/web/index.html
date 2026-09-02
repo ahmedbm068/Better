@@ -15,17 +15,24 @@
     />
     <title>Better</title>
     <style>
-      /* Inline so the splash paints before any stylesheet has loaded. */
-      html { background: #12110f; color: #e8e4dd; }
+      /*
+       * Inline so the splash paints before any stylesheet has loaded, which is
+       * also why these four are the only hex values outside the token sheet:
+       * nothing that reads a CSS variable exists yet. They are the night
+       * palette's --bg, --text and --text3, and the day palette's --bg and
+       * --text; if those change, change these or the app opens on a flash of
+       * the wrong colour.
+       */
+      html { background: #0e0d14; color: #edebf2; }
       body { margin: 0; font: 15px/1.5 system-ui, -apple-system, Segoe UI, sans-serif; }
       #splash {
         position: fixed; inset: 0; display: grid; place-content: center;
         gap: 0.75rem; text-align: center; padding: 2rem;
       }
       #splash h1 { margin: 0; font-size: 1.5rem; font-weight: 600; letter-spacing: -0.01em; }
-      #splash-status { margin: 0; color: #8d867c; font-size: 0.9rem; }
+      #splash-status { margin: 0; color: #7d7992; font-size: 0.9rem; }
       @media (prefers-color-scheme: light) {
-        html:not([data-theme='dark']) { background: #faf9f7; color: #22201d; }
+        html:not([data-theme='dark']) { background: #f3f3f7; color: #1a1826; }
       }
     </style>
   </head>

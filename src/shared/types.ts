@@ -63,6 +63,23 @@ export interface PrayerStatus {
   canMakeUp: boolean
 }
 
+/**
+ * The three theme modes.
+ *
+ * `solar` is not a third palette. It is the same two palettes with the ground
+ * blended between them by how much daylight there actually is at the user's
+ * coordinates — full night before dawn, full day between sunrise and sunset,
+ * and a graded hour either side.
+ */
+export const THEMES = ['dark', 'light', 'solar'] as const
+export type Theme = (typeof THEMES)[number]
+
+export const THEME_LABELS: Record<Theme, string> = {
+  dark: 'Dark',
+  light: 'Light',
+  solar: 'Follow the sun'
+}
+
 export const CALC_METHODS = ['MuslimWorldLeague', 'UmmAlQura', 'Egyptian', 'Karachi'] as const
 export type CalcMethod = (typeof CALC_METHODS)[number]
 
@@ -90,7 +107,7 @@ export interface Settings {
    * yet watching. Set once, on first run.
    */
   trackingStartDate: DateStr | null
-  theme: 'dark' | 'light'
+  theme: Theme
   notifyOnWindowOpen: boolean
   /** Minutes-before-close reminders, e.g. [30, 10]. */
   notifyLeadMinutes: number[]
