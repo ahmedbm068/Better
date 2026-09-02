@@ -194,6 +194,12 @@ export interface StreakInfo {
   record: number
   /** Whether a grace day is still available this calendar month. */
   graceAvailable?: boolean
+  /**
+   * Prayer streak only: true when every day in the current run was fully on
+   * time. False as soon as even one day in it was only kept by a catch-up —
+   * the run still counts, but it reads as kept rather than clean.
+   */
+  pure?: boolean
 }
 
 export interface ScoreBreakdown {
@@ -213,6 +219,8 @@ export interface DaySnapshot {
   /** False for days that predate the first run — those are never scored. */
   tracked: boolean
   prayers: PrayerStatus[]
+  /** The 5/5 prayer streak as it stood at the end of this day. */
+  prayerStreak: StreakInfo
   habits: Array<{
     habit: Habit
     applies: boolean

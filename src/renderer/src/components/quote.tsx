@@ -173,10 +173,10 @@ export function QuoteIntro(): React.JSX.Element | null {
       aria-live="polite"
       onMouseDown={() => setStage('fly')}
       style={{ transition: `opacity ${FLY}ms ease` }}
-      className={`fixed inset-0 z-[60] grid place-items-center px-8 cursor-pointer
+      className={`fixed inset-0 z-60 grid place-items-center px-8 cursor-pointer
         bg-bg/92 backdrop-blur-md ${stage === 'fly' ? 'opacity-0' : 'opacity-100'}`}
     >
-      <div ref={blockRef} style={flight ?? undefined} className="max-w-[640px] text-center">
+      <div ref={blockRef} style={flight ?? undefined} className="max-w-160 text-center">
         <div
           className="kicker text-accent"
           style={{ animation: `rise ${LABEL_IN}ms ${EASE} both` }}

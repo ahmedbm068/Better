@@ -149,7 +149,8 @@ export interface StatsResult {
     slipDays: number
     isQuitTracker: boolean
   }>
-  fiveOfFive: { current: number; record: number }
+  /** `pure` is false whenever the current run needed a catch-up, undefined at zero. */
+  fiveOfFive: { current: number; record: number; pure?: boolean }
   totals: {
     daysTracked: number
     avgScore: number

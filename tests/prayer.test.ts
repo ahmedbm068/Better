@@ -8,6 +8,8 @@ import {
   nextWindow,
   isPerfectDay,
   isDaySettled,
+  prayerStreakDay,
+  prayerStreakFromOutcomes,
   countDone,
   countLate,
   countPrayed,
@@ -243,5 +245,118 @@ describe('day-level helpers', () => {
     const st = dayStatuses(times, now, {})
     expect(currentWindow(st, now)?.prayer).toBe('asr')
     expect(nextWindow(st, now)?.prayer).toBe('maghrib')
+  })
+})
+
+describe('prayerStreakDay', () => {
+  const allDone = {
+    fajr: times.fajr + 60_000,
+    dhuhr: times.dhuhr + 60_000,
+    asr: times.asr + 60_000,
+    maghrib: times.maghrib + 60_000,
+    isha: times.isha + 60_000
+  }
+
+  it('is perfect when every prayer landed inside its own window', () => {
+    const st = dayStatuses(times, times.nextFajr, allDone)
+    expect(prayerStreakDay(st, times.nextFajr, times.nextFajr)).toBe('perfect')
+  })
+
+  it('is kept when a late prayer is caught up before the next Fajr', () => {
+    const madeUp = { ...allDone, asr: times.maghrib + H }
+    const st = dayStatuses(times, times.nextFajr, madeUp)
+    expect(prayerStreakDay(st, times.nextFajr, times.nextFajr)).toBe('kept')
+  })
+
+  it('is kept even with two late catch-ups, as long as both beat the cutoff', () => {
+    const madeUp = { ...allDone, asr: times.maghrib + H, dhuhr: times.asr + H }
+    const st = dayStatuses(times, times.nextFajr, madeUp)
+    expect(prayerStreakDay(st, times.nextFajr, times.nextFajr)).toBe('kept')
+  })
+
+  it('is broken when a catch-up lands on or after the next Fajr', () => {
+    const tooLate = { ...allDone, asr: times.nextFajr }
+    // now has to be at least as late as the mark itself.
+    const now = times.nextFajr + H
+    const st = dayStatuses(times, now, tooLate)
+    expect(prayerStreakDay(st, times.nextFajr, now)).toBe('broken')
+  })
+
+  it('is broken when a prayer was never caught up and the cutoff has passed', () => {
+    const st = dayStatuses(times, times.nextFajr, { ...allDone, asr: null })
+    expect(prayerStreakDay(st, times.nextFajr, times.nextFajr)).toBe('broken')
+  })
+
+  it('is pending mid-day, with windows still open or upcoming', () => {
+    const now = times.asr + 30 * 60_000
+    const st = dayStatuses(times, now, {})
+    expect(prayerStreakDay(st, times.nextFajr, now)).toBe('pending')
+  })
+
+  it('is pending when a prayer was missed but the make-up deadline has not passed', () => {
+    // Fajr's own window has closed, unmarked, but next Fajr is still a day away.
+    const now = times.dhuhr
+    const st = dayStatuses(times, now, {})
+    expect(prayerStreakDay(st, times.nextFajr, now)).toBe('pending')
+  })
+
+  it('stays pending even when an earlier prayer was already caught up in time', () => {
+    // Asr is a valid, already-decided catch-up; Isha is still open and
+    // undecided. One settled prayer cannot make the day's overall fate final
+    // while another still has time left on the clock.
+    const now = times.maghrib + 2 * H
+    const st = dayStatuses(times, now, { ...allDone, asr: times.maghrib + H, isha: null })
+    expect(prayerStreakDay(st, times.nextFajr, now)).toBe('pending')
+  })
+})
+
+describe('prayerStreakFromOutcomes', () => {
+  it('counts a run of perfect days, and calls it pure', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'perfect', 'perfect'])
+    expect(info).toEqual({ current: 3, record: 3, pure: true })
+  })
+
+  it('keeps the run alive through a kept day, but marks it impure', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'kept', 'perfect'])
+    expect(info.current).toBe(3)
+    expect(info.pure).toBe(false)
+  })
+
+  it('a single kept day is enough to make the whole run impure', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'perfect', 'kept'])
+    expect(info.current).toBe(3)
+    expect(info.pure).toBe(false)
+  })
+
+  it('breaks the run on a broken day, and does not count it', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'perfect', 'broken', 'perfect'])
+    expect(info.current).toBe(1)
+  })
+
+  it('lets a pending day (today) sit at the end without breaking or counting', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'perfect', 'pending'])
+    expect(info.current).toBe(2)
+    expect(info.pure).toBe(true)
+  })
+
+  it('is zero, not pure, with no days at all', () => {
+    expect(prayerStreakFromOutcomes([])).toEqual({ current: 0, record: 0, pure: false })
+  })
+
+  it('is zero, not pure, right after a break', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'broken'])
+    expect(info).toEqual({ current: 0, record: 1, pure: false })
+  })
+
+  it('keeps the record even after the current run breaks', () => {
+    const info = prayerStreakFromOutcomes(['perfect', 'perfect', 'perfect', 'broken', 'perfect'])
+    expect(info.record).toBe(3)
+    expect(info.current).toBe(1)
+  })
+
+  it('the record is never smaller than the run in progress', () => {
+    const info = prayerStreakFromOutcomes(['broken', 'perfect', 'kept'])
+    expect(info.record).toBe(2)
+    expect(info.current).toBe(2)
   })
 })

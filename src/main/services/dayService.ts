@@ -21,6 +21,7 @@ import type {
   SleepSession
 } from '@shared/types'
 import { logicalDate } from '@shared/day'
+import type { PrayerDayOutcome } from '@shared/prayer'
 import {
   MAKEUP_WINDOW_MS,
   countDone,
@@ -29,6 +30,7 @@ import {
   isCheckable,
   isPerfectDay,
   isRecordable,
+  prayerStreakDay,
   windowFor
 } from '@shared/prayer'
 import { computeScore, emptyScore } from '@shared/score'
@@ -51,7 +53,13 @@ import * as avoidRepo from '../db/repo/avoid'
 import * as workRepo from '../db/repo/work'
 import * as sleepRepo from '../db/repo/sleep'
 import * as miscRepo from '../db/repo/misc'
-import { avoidStreak, habitStreak, type StreakContext } from './streaksService'
+import {
+  avoidStreak,
+  habitStreak,
+  prayerStreak,
+  prayerStreakFrom,
+  type StreakContext
+} from './streaksService'
 
 /** A refusal the UI should show as plain text, not as a crash. */
 export class GuardError extends Error {
@@ -113,6 +121,16 @@ export function getPrayerStatuses(
   settings = readSettings()
 ): PrayerStatus[] {
   return dayStatuses(getDayTimes(date, settings), now, prayersRepo.getMarks(date))
+}
+
+/** How one day counts toward the prayer streak — see `prayerStreakDay`. */
+export function prayerDayOutcome(
+  date: DateStr,
+  now: Millis,
+  settings: Settings
+): PrayerDayOutcome {
+  const times = getDayTimes(date, settings)
+  return prayerStreakDay(getPrayerStatuses(date, now, settings), times.nextFajr, now)
 }
 
 /** How the make-up limit reads in a refusal, without hardcoding the number. */
@@ -331,6 +349,11 @@ export function buildDaySnapshot(date: DateStr, now: Millis = Date.now()): DaySn
     isPast: daysBetween(date, today) > 0,
     tracked: isTracked(date, settings),
     prayers: getPrayerStatuses(date, now, settings),
+    prayerStreak: prayerStreak(
+      (d) => prayerDayOutcome(d, now, settings),
+      date,
+      prayerStreakFrom(date, settings)
+    ),
     habits,
     avoid,
     work,

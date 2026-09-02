@@ -17,7 +17,14 @@
  *   Maghrib [maghrib, isha)
  *   Isha    [isha, next day's fajr)
  */
-import type { DayPrayerTimes, Millis, PrayerName, PrayerStatus, PrayerWindow } from './types'
+import type {
+  DayPrayerTimes,
+  Millis,
+  PrayerName,
+  PrayerStatus,
+  PrayerWindow,
+  StreakInfo
+} from './types'
 import { PRAYERS } from './types'
 
 export function buildWindows(t: DayPrayerTimes): PrayerWindow[] {
@@ -124,10 +131,10 @@ export function countPrayed(statuses: PrayerStatus[]): number {
 }
 
 /**
- * True when all five were checked inside their windows. Drives the 5/5 streak.
+ * True when all five were checked inside their windows — the clean case.
  *
- * A made-up prayer does not qualify, and that is deliberate: the streak is for
- * days you kept, and a day rescued afterwards is not one of them.
+ * A made-up prayer does not qualify. See `prayerStreakDay` below for the
+ * broader question the streak actually asks, which is not quite this one.
  */
 export function isPerfectDay(statuses: PrayerStatus[]): boolean {
   return statuses.length === PRAYERS.length && statuses.every((s) => s.state === 'done')
@@ -136,4 +143,90 @@ export function isPerfectDay(statuses: PrayerStatus[]): boolean {
 /** True once every window of the day has closed — the day can no longer change. */
 export function isDaySettled(statuses: PrayerStatus[], now: Millis): boolean {
   return statuses.every((s) => now >= s.end)
+}
+
+/**
+ * How one day counts toward the prayer streak — a wider question than
+ * `isPerfectDay`, because a late prayer, caught up in time, should not cost
+ * you the streak. It should just stop being invisible about it.
+ *
+ *   perfect  every prayer inside its own window. The clean case.
+ *   kept     every prayer was prayed, but one or more were made up — and
+ *            every make-up landed before `nextFajr`. The streak survives,
+ *            marked differently, because the day was not clean.
+ *   broken   a prayer missed outright, or made up on or after `nextFajr` —
+ *            too late to save the day, whatever the general make-up
+ *            allowance (`MAKEUP_WINDOW_MS`, two days) still lets you record
+ *            it as for the day's own score and history.
+ *   pending  undecided: the day is not over and there is still time
+ *            (`now < nextFajr`) to catch up. Never breaks a run in progress.
+ *
+ * `nextFajr` is the same instant that already closes the Isha window (see
+ * `buildWindows`) — the streak's cutoff and the calendar day's own boundary
+ * are the same moment on purpose. A doneAt is always <= now, so a day cannot
+ * be found `broken` by a late catch-up before its own cutoff has passed —
+ * only `pending` can precede that, which is what keeps a run in progress from
+ * being judged before it is over.
+ */
+export type PrayerDayOutcome = 'perfect' | 'kept' | 'broken' | 'pending'
+
+export function prayerStreakDay(
+  statuses: PrayerStatus[],
+  nextFajr: Millis,
+  now: Millis
+): PrayerDayOutcome {
+  let anyLate = false
+  let anyUnresolved = false
+  for (const s of statuses) {
+    if (s.state === 'done') continue
+    if (s.state === 'late') {
+      if (s.doneAt != null && s.doneAt < nextFajr) {
+        anyLate = true
+        continue
+      }
+      return 'broken'
+    }
+    // missed, open, or upcoming: not prayed yet, one way or the other.
+    anyUnresolved = true
+  }
+  if (anyUnresolved) return now < nextFajr ? 'pending' : 'broken'
+  return anyLate ? 'kept' : 'perfect'
+}
+
+/**
+ * Turns a day-by-day outcome list (oldest first) into a streak.
+ *
+ * `perfect` and `kept` both extend a run — a late prayer, caught up before its
+ * deadline, is a kept promise, not a broken one. Only `broken` ends it, and
+ * `pending` (today, still in progress) neither extends nor breaks it, the same
+ * as an in-progress habit day.
+ *
+ * `pure` says whether the *current* run is unbroken by a single catch-up —
+ * true only once every day in it was `perfect`. It flips to false, and stays
+ * there for the run, the moment one day in it was merely `kept`.
+ */
+export function prayerStreakFromOutcomes(outcomes: PrayerDayOutcome[]): StreakInfo {
+  let current = 0
+  let pure = true
+  for (let i = outcomes.length - 1; i >= 0; i--) {
+    const o = outcomes[i]
+    if (o === 'pending') continue
+    if (o === 'broken') break
+    current++
+    if (o === 'kept') pure = false
+  }
+
+  let best = 0
+  let run = 0
+  for (const o of outcomes) {
+    if (o === 'pending') continue
+    if (o === 'broken') {
+      run = 0
+      continue
+    }
+    run++
+    best = Math.max(best, run)
+  }
+
+  return { current, record: Math.max(best, current), pure: current > 0 && pure }
 }

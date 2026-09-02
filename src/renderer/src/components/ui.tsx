@@ -49,7 +49,7 @@ export function Panel({
             {live && (
               <span className="relative grid place-items-center w-2 h-2 shrink-0">
                 <span className="absolute w-2 h-2 rounded-full bg-accent breathe" />
-                <span className="w-[5px] h-[5px] rounded-full bg-accent" />
+                <span className="w-1.25 h-1.25 rounded-full bg-accent" />
               </span>
             )}
             <span className="truncate">{title}</span>
@@ -350,7 +350,7 @@ export function MiniBars({
   tone?: 'accent' | 'dim'
 }): React.JSX.Element {
   return (
-    <div className={`flex items-end gap-[3px] ${className}`} style={{ height }} aria-hidden="true">
+    <div className={`flex items-end gap-0.75 ${className}`} style={{ height }} aria-hidden="true">
       {values.map((v, i) => (
         <div key={i} className="flex-1 bg-wait rounded-[2px] relative" style={{ height }}>
           <div
@@ -428,11 +428,13 @@ export function Ring({
 export function Chip({
   children,
   tone = 'default',
-  className = ''
+  className = '',
+  title
 }: {
   children: ReactNode
   tone?: 'default' | 'accent' | 'done' | 'missed' | 'grace'
   className?: string
+  title?: string
 }): React.JSX.Element {
   const tones: Record<string, string> = {
     default: 'bg-panel-2 text-dim',
@@ -443,7 +445,8 @@ export function Chip({
   }
   return (
     <span
-      className={`inline-flex items-center gap-1 h-[22px] px-2 rounded-full
+      title={title}
+      className={`inline-flex items-center gap-1 h-5.5 px-2 rounded-full
         text-[11.5px] font-medium whitespace-nowrap ${tones[tone]} ${className}`}
     >
       {children}
@@ -465,7 +468,7 @@ export function StreakBadge({
   const live = current > 0
   return (
     <span
-      className={`inline-flex items-center gap-1 h-[22px] pl-1.5 pr-2 rounded-full shrink-0
+      className={`inline-flex items-center gap-1 h-5.5 pl-1.5 pr-2 rounded-full shrink-0
         text-[11.5px] ${live ? 'bg-accent-ghost text-accent' : 'bg-panel-2 text-faint'}`}
       title={`Current streak ${current} · all-time record ${record}`}
     >
@@ -504,7 +507,7 @@ export function DayStrip({
   const w = tall ? 5 : cell
   const h = tall ? 12 : cell
   return (
-    <span className="inline-flex gap-[3px]" aria-hidden="true">
+    <span className="inline-flex gap-0.75" aria-hidden="true">
       {days.map((d) => {
         const untracked = d.tracked === false || d.applies === false
         const look = d.done
@@ -573,13 +576,13 @@ export function Toggle({
         aria-label={label}
         onClick={() => onChange(!checked)}
         style={{ transition: `all .2s ${EASE}` }}
-        className={`shrink-0 w-10 h-[22px] rounded-full border cursor-pointer relative mt-0.5
+        className={`shrink-0 w-10 h-5.5 rounded-full border cursor-pointer relative mt-0.5
           ${checked ? 'bg-accent border-accent' : 'bg-panel-2 border-line-strong'}`}
       >
         <span
           style={{ transition: `all .22s ${EASE}` }}
-          className={`absolute top-[3px] w-3.5 h-3.5 rounded-full
-            ${checked ? 'left-[21px] bg-accent-ink' : 'left-[3px] bg-faint'}`}
+          className={`absolute top-0.75 w-3.5 h-3.5 rounded-full
+            ${checked ? 'left-5.25 bg-accent-ink' : 'left-0.75 bg-faint'}`}
         />
       </button>
     </div>

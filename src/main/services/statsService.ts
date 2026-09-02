@@ -5,9 +5,9 @@
 import type { DateStr, Millis, StreakInfo } from '@shared/types'
 import { addDays, daysBetween, rangeDates } from '@shared/time'
 import { readSettings } from '../db/settings'
-import { currentDate, scoreFor, getPrayerStatuses, isPerfectPrayerDay } from './dayService'
+import { currentDate, scoreFor, getPrayerStatuses, prayerDayOutcome } from './dayService'
 import { warmRange } from './prayerTimes'
-import { avoidCleanDays, avoidStreak, habitStreak, perfectPrayerStreak } from './streaksService'
+import { avoidCleanDays, avoidStreak, habitStreak, prayerStreak } from './streaksService'
 import { countDone, countLate } from '@shared/prayer'
 import { appliesOnWeekday } from '@shared/streaks'
 import { weekdayOf } from '@shared/time'
@@ -201,18 +201,17 @@ export function avoidStats(now: Millis = Date.now()): AvoidStat[] {
   })
 }
 
-/** Consecutive logical days with all five prayers done in time. */
+/**
+ * Consecutive logical days that kept all five prayers — on time, or made up
+ * before the next day's Fajr. `StreakInfo.pure` says whether the *current*
+ * run needed no catch-ups at all.
+ */
 export function fiveOfFiveStreak(now: Millis = Date.now()): StreakInfo {
   const settings = readSettings()
   const today = currentDate(now, settings)
   const from = historyStart(now)
   warmRange(from, today, settings)
-  return perfectPrayerStreak(
-    (date) => isPerfectPrayerDay(date, now, settings),
-    today,
-    { today, tz: settings.timezone },
-    from
-  )
+  return prayerStreak((date) => prayerDayOutcome(date, now, settings), today, from)
 }
 
 export interface StatsOverview {

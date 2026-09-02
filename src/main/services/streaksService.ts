@@ -4,9 +4,11 @@
  * Builds the day list each item is judged on, then hands it to the pure rules
  * in `@shared/streaks`. Days before an item existed are not counted against it.
  */
-import type { AvoidItem, DateStr, Habit, StreakInfo } from '@shared/types'
+import type { AvoidItem, DateStr, Habit, Settings, StreakInfo } from '@shared/types'
 import type { StreakDay } from '@shared/streaks'
 import { appliesOnWeekday, computeStreakInfo } from '@shared/streaks'
+import type { PrayerDayOutcome } from '@shared/prayer'
+import { prayerStreakFromOutcomes } from '@shared/prayer'
 import { addDays, dateStrInZone, daysBetween, rangeDates, weekdayOf } from '@shared/time'
 import { getHabitLogsFor, graceUsedInMonth } from '../db/repo/habits'
 import { getAvoidLogsFor } from '../db/repo/avoid'
@@ -80,23 +82,26 @@ export function avoidCleanDays(item: AvoidItem, upTo: DateStr, ctx: StreakContex
   return avoidStreakDays(item, upTo, ctx).filter((d) => d.done).length
 }
 
+/** Where a per-day prayer-streak scan may start, absent a smarter bound. */
+export function prayerStreakFrom(upTo: DateStr, settings: Settings): DateStr {
+  const floor = addDays(upTo, -MAX_HISTORY_DAYS)
+  return settings.trackingStartDate && settings.trackingStartDate > floor
+    ? settings.trackingStartDate
+    : floor
+}
+
 /**
- * The 5/5 prayer streak: consecutive logical days on which all five prayers
- * were checked inside their windows.
+ * The prayer streak: consecutive logical days that were kept, whether by
+ * being perfect or merely rescued in time — the actual rule for what counts
+ * as a day lives in `prayerStreakDay`, in `@shared/prayer`. This is a thin
+ * wrapper: it just builds the outcome list the caller's classifier is judged
+ * on and hands it to the pure aggregator.
  */
-export function perfectPrayerStreak(
-  isPerfect: (date: DateStr) => boolean,
+export function prayerStreak(
+  outcomeFor: (date: DateStr) => PrayerDayOutcome,
   upTo: DateStr,
-  ctx: StreakContext,
   from: DateStr
 ): StreakInfo {
-  const days: StreakDay[] = rangeDates(from, upTo).map((date) => ({
-    date,
-    applies: true,
-    done: isPerfect(date),
-    grace: false,
-    // The day in progress cannot break the run: some windows are still open.
-    pending: date === ctx.today && !isPerfect(date)
-  }))
-  return computeStreakInfo(days)
+  if (daysBetween(from, upTo) < 0) return { current: 0, record: 0, pure: false }
+  return prayerStreakFromOutcomes(rangeDates(from, upTo).map(outcomeFor))
 }

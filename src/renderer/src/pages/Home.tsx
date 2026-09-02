@@ -36,6 +36,7 @@ import { DayArc, PrayerRow } from '../components/dayarc'
 import { QuoteCard } from '../components/quote'
 import {
   IconChevron,
+  IconFlame,
   IconMoney,
   IconPlay,
   IconSleep,
@@ -82,7 +83,7 @@ export default function HomePage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1120px] px-6 py-5 space-y-4 stagger">
+    <div className="mx-auto w-full max-w-280 px-6 py-5 space-y-4 stagger">
       <Header day={day} settings={settings} />
 
       {action.error && <Note tone={action.error.isGuard ? 'info' : 'warn'}>{action.error.message}</Note>}
@@ -126,12 +127,27 @@ function Header({ day, settings }: { day: DaySnapshot; settings: Settings }): Re
           Week {isoWeekNumber(day.date)}
         </p>
       </div>
-      {allPrayed && (
-        <Chip tone="done" className="mb-1">
-          <MarkAllPrayers size={13} />
-          All five prayed
-        </Chip>
-      )}
+      <div className="flex items-center gap-2 mb-1">
+        {day.prayerStreak.current > 0 && (
+          <Chip
+            tone={day.prayerStreak.pure ? 'done' : 'grace'}
+            title={
+              day.prayerStreak.pure
+                ? 'Every prayer on time, this whole run'
+                : 'Kept — one or more days needed a catch-up before the next Fajr'
+            }
+          >
+            <IconFlame size={12} />
+            {day.prayerStreak.current}-day streak
+          </Chip>
+        )}
+        {allPrayed && (
+          <Chip tone="done">
+            <MarkAllPrayers size={13} />
+            All five prayed
+          </Chip>
+        )}
+      </div>
     </header>
   )
 }
@@ -197,7 +213,7 @@ function Hero({
           <Button
             size="lg"
             variant="primary"
-            className="min-w-[220px]"
+            className="min-w-55"
             onClick={() => run(() => api.checkPrayer(day.date, open.prayer))}
           >
             Mark {PRAYER_LABELS[open.prayer]} prayed
@@ -433,7 +449,7 @@ function OpenList({ day, run }: { day: DaySnapshot; run: Run }): React.JSX.Eleme
           <div className="py-10 flex flex-col items-center gap-2.5 text-center pop-in">
             <MarkAllPrayers size={26} />
             <p className="text-[15px] font-medium">Nothing left today.</p>
-            <p className="quiet max-w-[280px]">
+            <p className="quiet max-w-70">
               {nothingTracked ? (
                 <>
                   There is nothing on your lists yet.{' '}

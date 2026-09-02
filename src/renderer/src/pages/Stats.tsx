@@ -22,7 +22,7 @@ export default function StatsPage(): React.JSX.Element {
     : 0
 
   return (
-    <div className="p-6 max-w-[1240px] mx-auto space-y-5">
+    <div className="p-6 max-w-310 mx-auto space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
           <div className="label">Stats</div>
@@ -57,8 +57,23 @@ export default function StatsPage(): React.JSX.Element {
           </div>
         </Panel>
         <Panel>
-          <div className="label mb-1">5/5 streak</div>
-          <div className="num text-2xl text-accent">{stats.fiveOfFive.current}</div>
+          <div className="label mb-1">Prayer streak</div>
+          <div
+            className={`num text-2xl ${
+              stats.fiveOfFive.current === 0
+                ? 'text-accent'
+                : stats.fiveOfFive.pure
+                  ? 'text-done'
+                  : 'text-grace'
+            }`}
+            title={
+              stats.fiveOfFive.current > 0 && stats.fiveOfFive.pure === false
+                ? 'Kept, not clean — one or more days needed a catch-up before the next Fajr'
+                : undefined
+            }
+          >
+            {stats.fiveOfFive.current}
+          </div>
           <div className="num text-[11px] text-faint mt-1">record {stats.fiveOfFive.record}</div>
         </Panel>
         <Panel>
@@ -105,7 +120,7 @@ export default function StatsPage(): React.JSX.Element {
           {[0, 0.3, 0.6, 0.85, 1].map((v) => (
             <span
               key={v}
-              className="w-[11px] h-[11px] "
+              className="w-2.75 h-2.75 "
               style={{
                 background:
                   v === 0
@@ -127,10 +142,10 @@ export default function StatsPage(): React.JSX.Element {
               {stats.habits.map((h) => (
                 <li key={h.id} className="py-2 flex items-center gap-3">
                   <span className="flex-1 truncate">{h.name}</span>
-                  <span className="num text-dim w-[74px] text-right">
+                  <span className="num text-dim w-18.5 text-right">
                     {h.completions}/{h.applicableDays}
                   </span>
-                  <span className="num text-dim w-[44px] text-right">
+                  <span className="num text-dim w-11 text-right">
                     {Math.round(h.rate * 100)}%
                   </span>
                   <StreakBadge current={h.streak.current} record={h.streak.record} />
@@ -158,8 +173,8 @@ export default function StatsPage(): React.JSX.Element {
                 {stats.avoid.map((a) => (
                   <li key={a.id} className="py-2 flex items-center gap-3">
                     <span className="flex-1 truncate">{a.name}</span>
-                    <span className="num text-done w-[70px] text-right">{a.cleanDays} clean</span>
-                    <span className="num text-missed w-[62px] text-right">{a.slipDays} slips</span>
+                    <span className="num text-done w-17.5 text-right">{a.cleanDays} clean</span>
+                    <span className="num text-missed w-15.5 text-right">{a.slipDays} slips</span>
                     <StreakBadge current={a.streak.current} record={a.streak.record} />
                   </li>
                 ))}
