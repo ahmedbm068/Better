@@ -44,7 +44,7 @@ export function Panel({
         ${live ? 'border-accent/40' : 'border-line'} ${className}`}
     >
       {(title || right) && (
-        <header className="flex items-center justify-between gap-3 px-4 h-11 border-b border-line">
+        <header className="flex items-center justify-between gap-3 px-3 h-10 md:px-4 md:h-11 border-b border-line">
           <span className="label flex items-center gap-2 min-w-0">
             {live && (
               <span className="relative grid place-items-center w-2 h-2 shrink-0">
@@ -57,7 +57,7 @@ export function Panel({
           {right}
         </header>
       )}
-      <div className={`${pad ? 'p-4' : ''} ${bodyClass}`}>{children}</div>
+      <div className={`${pad ? 'p-3 md:p-4' : ''} ${bodyClass}`}>{children}</div>
     </section>
   )
 }
@@ -225,9 +225,9 @@ export function CheckBox({
       disabled={inert}
       onClick={onToggle}
       style={{ transition: `all .18s ${EASE}` }}
-      className={`shrink-0 w-5 h-5 rounded-md border-[1.5px] grid place-items-center
+      className={`relative shrink-0 w-5 h-5 rounded-md border-[1.5px] grid place-items-center
         ${styles[state]}
-        ${inert ? 'cursor-default' : 'cursor-pointer hover:scale-110 active:scale-90'}`}
+        ${inert ? 'cursor-default' : 'tap cursor-pointer hover:scale-110 active:scale-90'}`}
     >
       {state === 'done' && tick('var(--accent-ink)')}
       {state === 'late' && tick('var(--late)')}

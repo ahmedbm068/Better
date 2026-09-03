@@ -99,7 +99,7 @@ export function DayArc({
   const nowPoint = at(nowT)
 
   return (
-    <div className="relative w-full max-w-[600px] mx-auto">
+    <div className="relative w-full max-w-150 mx-auto">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full h-auto block overflow-visible"
@@ -220,7 +220,7 @@ function PrayerMark({ state }: { state: PrayerStatus['state'] }): React.JSX.Elem
   )
   return (
     <span
-      className={`shrink-0 w-[17px] h-[17px] rounded-md border-[1.5px] grid place-items-center
+      className={`shrink-0 w-4.25 h-4.25 rounded-md border-[1.5px] grid place-items-center
         transition-colors ${styles[state]}`}
       aria-hidden="true"
     >

@@ -346,6 +346,30 @@ body::before {
  * `components` sits below `utilities`, which is where a default belongs.
  */
 @layer components {
+  /*
+   * A small control that still takes a thumb.
+   *
+   * A 20px checkbox is the right size to look at and the wrong size to hit —
+   * the guidance is 44px, and a finger does not care what the border-radius
+   * is. Rather than inflate the visible box, hang a transparent 44px pad off
+   * the middle of it. The row itself is already 44px tall, so this widens the
+   * target without moving a single pixel of the design.
+   *
+   * Pointer-precise devices already hit a 20px box fine, so the pad is only
+   * worth its overlap risk on coarse pointers.
+   */
+  @media (pointer: coarse) {
+    .tap::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 44px;
+      height: 44px;
+      transform: translate(-50%, -50%);
+    }
+  }
+
   .num {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;

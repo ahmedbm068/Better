@@ -42,7 +42,7 @@ export default function CalendarPage(): React.JSX.Element {
     })
   }
 
-  if (!month) return <div className="p-[18px] text-faint">Loading…</div>
+  if (!month) return <div className="p-4.5 text-faint">Loading…</div>
 
   const inMonth = month.days.filter((d) => Number(d.date.slice(5, 7)) === cursor.month)
   const scored = inMonth.filter((d) => d.tracked && !d.inFuture)
@@ -65,7 +65,7 @@ export default function CalendarPage(): React.JSX.Element {
 
   return (
     <div className="pb-5">
-      <div className="h-11 px-[18px] border-b border-line flex items-center justify-between gap-4 bg-panel">
+      <div className="h-11 px-3 md:px-4.5 border-b border-line flex items-center justify-between gap-4 bg-panel">
         <div className="flex items-baseline gap-4">
           <span className="label">Calendar</span>
           <span className="num text-[15px]">{formatMonthYear(cursor.year, cursor.month)}</span>
@@ -87,7 +87,7 @@ export default function CalendarPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="px-[18px] pt-4">
+      <div className="px-3 md:px-4.5 pt-4">
         <div className="grid grid-cols-2 gap-px bg-line border border-line md:flex md:gap-0">
           <StatTile label="Avg score / tracked day" value={avgScore} />
           <StatTile label="Prayer rate" value={prayerRate} unit="%" />
@@ -96,7 +96,7 @@ export default function CalendarPage(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="px-[18px] pt-2.5 flex gap-2.5 items-start">
+      <div className="px-3 md:px-4.5 pt-2.5 flex gap-2.5 items-start">
         <Panel pad={false} className="flex-1 min-w-0">
           <div className="grid grid-cols-7 border-b-2 border-line-strong">
             {WEEK_HEADERS.map((d) => (
@@ -127,7 +127,7 @@ export default function CalendarPage(): React.JSX.Element {
           )}
         </Panel>
 
-        <Panel pad={false} className="w-[152px] shrink-0 hidden xl:block">
+        <Panel pad={false} className="w-38 shrink-0 hidden xl:block">
           <div className="micro px-3 py-2.5 border-b-2 border-line-strong">Week</div>
           {weeks.map((week, i) => {
             const rows = week.filter((d) => d.tracked && !d.inFuture)
@@ -139,7 +139,7 @@ export default function CalendarPage(): React.JSX.Element {
               : null
             const hours = rows.reduce((s, d) => s + d.workSeconds, 0) / 3600
             return (
-              <div key={i} className="px-3 h-[118px] flex flex-col justify-center gap-1.5 border-b border-line last:border-b-0">
+              <div key={i} className="px-3 h-29.5 flex flex-col justify-center gap-1.5 border-b border-line last:border-b-0">
                 <Meta label="Avg" value={avg === null ? '—' : String(avg)} />
                 <Meta label="Prayers" value={rate === null ? '—' : `${rate}%`} />
                 <Meta label="Focus" value={rows.length ? `${Math.round(hours * 10) / 10}h` : '—'} />
@@ -150,7 +150,7 @@ export default function CalendarPage(): React.JSX.Element {
       </div>
 
       {month.trackingStart && (
-        <div className="px-[18px] pt-3">
+        <div className="px-3 md:px-4.5 pt-3">
           <span className="micro">
             No data before {formatDateLong(month.trackingStart)}
           </span>
@@ -204,7 +204,7 @@ function DayCell({
 
   return (
     <div
-      className={`relative h-[70px] md:h-[118px] border-r border-b border-line p-1.5 md:p-2.5 flex flex-col
+      className={`relative h-17.5 md:h-29.5 border-r border-b border-line p-1.5 md:p-2.5 flex flex-col
         ${otherMonth ? 'opacity-40' : ''}
         ${isToday ? 'border-t-2 border-t-accent border-l-2 border-l-accent' : ''}`}
       style={{ background: ground }}
@@ -251,7 +251,7 @@ function DayCell({
             onChange={(e) => setNote(e.target.value)}
             onBlur={save}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-            className="hidden md:block !border-0 !bg-transparent !px-0 !py-0 text-[11px] text-dim w-full"
+            className="hidden md:block border-0! bg-transparent! px-0! py-0! text-[11px] text-dim w-full"
           />
         </>
       )}

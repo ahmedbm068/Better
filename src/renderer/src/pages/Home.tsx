@@ -83,7 +83,7 @@ export default function HomePage(): React.JSX.Element {
   }
 
   return (
-    <div className="mx-auto w-full max-w-280 px-6 py-5 space-y-4 stagger">
+    <div className="mx-auto w-full max-w-280 px-3 py-3 space-y-3 md:px-6 md:py-5 md:space-y-4 stagger">
       <Header day={day} settings={settings} />
 
       {action.error && <Note tone={action.error.isGuard ? 'info' : 'warn'}>{action.error.message}</Note>}
@@ -120,7 +120,7 @@ function Header({ day, settings }: { day: DaySnapshot; settings: Settings }): Re
   return (
     <header className="flex items-end justify-between gap-4 flex-wrap">
       <div className="min-w-0">
-        <h1 className="text-[26px] leading-tight font-semibold tracking-[-0.02em] truncate">
+        <h1 className="text-[20px] md:text-[26px] leading-tight font-semibold tracking-[-0.02em] truncate">
           {formatDateLong(day.date)}
         </h1>
         <p className="micro mt-0.5" title={rollover}>
@@ -188,10 +188,10 @@ function Hero({
       pad={false}
       className="overflow-hidden h-full flex flex-col"
     >
-      <div className="px-6 pt-5 flex-1 flex flex-col justify-center">
+      <div className="px-3 pt-3 md:px-6 md:pt-5 flex-1 flex flex-col justify-center">
         <DayArc prayers={day.prayers} now={now} settings={settings}>
           <span className="kicker">{kicker}</span>
-          <span className="text-[27px] leading-tight font-semibold tracking-[-0.02em] mt-1">
+          <span className="text-[21px] md:text-[27px] leading-tight font-semibold tracking-[-0.02em] mt-1">
             {subject ? PRAYER_LABELS[subject.prayer] : 'All windows closed'}
           </span>
           <Countdown
@@ -221,7 +221,7 @@ function Hero({
         </div>
       )}
 
-      <div className="px-4 pt-4 pb-2 mt-3 border-t border-line">
+      <div className="px-2 pt-2.5 pb-1.5 mt-2 md:px-4 md:pt-4 md:pb-2 md:mt-3 border-t border-line">
         <PrayerRow
           prayers={day.prayers}
           settings={settings}
@@ -250,7 +250,7 @@ function Hero({
 function Countdown({ text, className = '' }: { text: string; className?: string }): React.JSX.Element {
   const parts = text.match(/\d+|[a-z]+|—/gi) ?? [text]
   return (
-    <span className={`num text-[54px] leading-none font-medium tracking-[-0.03em] ${className}`}>
+    <span className={`num text-[44px] md:text-[54px] leading-none font-medium tracking-[-0.03em] ${className}`}>
       {parts.map((part, i) =>
         /^\d+$/.test(part) ? (
           <span key={i}>{part}</span>
@@ -380,8 +380,9 @@ function OpenList({ day, run }: { day: DaySnapshot; run: Run }): React.JSX.Eleme
             type="button"
             title="Log a slip"
             onClick={() => setSlipFor({ id: a.item.id, name: a.item.name })}
-            className="text-[11.5px] text-faint hover:text-missed px-2 h-6 rounded-md
-              opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity cursor-pointer"
+            className="text-[11.5px] text-faint hover:text-missed px-2 h-11 md:h-6 rounded-md
+              opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100
+              transition-opacity cursor-pointer"
           >
             Log slip
           </button>
@@ -577,10 +578,10 @@ function Score({ day, stats }: { day: DaySnapshot; stats: StatsResult | null }):
         </div>
       </div>
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-3.5 space-y-2 md:mt-5 md:space-y-3">
         {parts.map((p) => (
           <div key={p.label} title={p.basis}>
-            <div className="flex items-baseline justify-between gap-2 mb-1.5">
+            <div className="flex items-baseline justify-between gap-2 mb-1 md:mb-1.5">
               <span className="text-[12.5px] text-dim">{p.label}</span>
               <span className="num text-[11.5px] text-faint">
                 {p.value}/{p.max}
@@ -665,7 +666,7 @@ function Figure({
 }): React.JSX.Element {
   return (
     <div className="flex items-baseline gap-1.5">
-      <span className={`num text-[34px] leading-none font-medium tracking-[-0.03em] ${tone}`}>
+      <span className={`num text-[26px] md:text-[34px] leading-none font-medium tracking-[-0.03em] ${tone}`}>
         {value}
       </span>
       {unit && <span className="text-[12px] text-faint">{unit}</span>}
