@@ -507,6 +507,17 @@ select:focus-visible {
   }
 }
 
+/* A sheet anchored to the bottom edge arrives from off-screen, not in place —
+   the direction it will leave in when dismissed. For the mobile "more" sheet. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
 /*
  * Ink settling, for the one place text is handwritten rather than set.
  *
@@ -585,6 +596,10 @@ select:focus-visible {
 .fade-in {
   animation: fade 0.4s ease both;
   animation-delay: var(--d, 0ms);
+}
+
+.sheet-up {
+  animation: sheet-up 0.28s var(--ease-out-soft) both;
 }
 
 .pop-in {

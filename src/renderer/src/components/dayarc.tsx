@@ -296,9 +296,9 @@ export function PrayerRow({
           >
             <span className="flex items-center gap-1.5">
               <PrayerMark state={s.state} />
-              <span className={`text-[11.5px] font-semibold ${color}`}>{label}</span>
+              <span className={`text-[11.5px] max-md:text-[13px] font-semibold ${color}`}>{label}</span>
             </span>
-            <span className={`num text-[12px] ${isSubject ? 'text-fg' : 'text-faint'}`}>
+            <span className={`num text-[12px] max-md:text-[13px] ${isSubject ? 'text-fg' : 'text-faint'}`}>
               {formatClock(s.start, settings.timezone)}
             </span>
           </button>

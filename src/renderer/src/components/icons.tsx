@@ -178,6 +178,13 @@ export const IconClose = (p: IconProps): React.JSX.Element => (
   </Icon>
 )
 
+/** Opens the nav drawer on a narrow screen. Three bars, evenly spaced. */
+export const IconMenu = (p: IconProps): React.JSX.Element => (
+  <Icon {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Icon>
+)
+
 /* ------------------------------------------------------------------ meaning */
 
 /** A streak. Carried by habits and by the avoid list. */
