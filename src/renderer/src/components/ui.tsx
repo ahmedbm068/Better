@@ -271,13 +271,13 @@ export function CheckRow({
           <button
             type="button"
             onClick={onLabelClick}
-            className="text-left truncate w-full cursor-pointer hover:text-accent transition-colors"
+            className="text-left max-md:line-clamp-2 md:truncate w-full cursor-pointer hover:text-accent transition-colors"
           >
             {label}
           </button>
         ) : (
           <div
-            className={`truncate transition-colors ${
+            className={`max-md:line-clamp-2 md:truncate transition-colors ${
               state === 'done' || state === 'late' ? 'text-dim' : ''
             }`}
           >
@@ -320,7 +320,7 @@ export function StatTile({
   }
   const empty = value === null || value === undefined
   return (
-    <div className="flex-1 min-w-0 px-4 py-3.5">
+    <div className="flex-1 min-w-0 px-4 py-3.5 bg-panel">
       <div className="micro mb-2">{label}</div>
       <div className="flex items-baseline gap-1.5">
         <span

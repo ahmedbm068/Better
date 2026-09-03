@@ -294,7 +294,10 @@ export function PrayerRow({
               ${live ? 'cursor-pointer hover:bg-panel-2 hover:border-line' : 'cursor-default'}
               ${isSubject ? 'bg-panel-2' : ''}`}
           >
-            <span className="flex items-center gap-1.5">
+            {/* Five columns leave ~56px each on a phone — not enough for an
+                icon beside a word like "Maghrib". Stacking the mark above
+                the label there gives the label the column to itself. */}
+            <span className="flex flex-col items-center gap-0.5 md:flex-row md:gap-1.5">
               <PrayerMark state={s.state} />
               <span className={`text-[11.5px] max-md:text-[13px] font-semibold ${color}`}>{label}</span>
             </span>

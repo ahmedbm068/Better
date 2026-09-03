@@ -231,6 +231,11 @@
    polarity would drag every colour through the unreadable middle. */
 html {
   transition: --warm 600ms ease;
+  /* Mobile browsers auto-inflate text in narrow columns to "help"
+     readability; it overrides our own sizes unpredictably and is what was
+     making tight rows (the prayer strip, calendar cells) collide. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 @theme inline {

@@ -88,7 +88,7 @@ export default function CalendarPage(): React.JSX.Element {
       </div>
 
       <div className="px-[18px] pt-4">
-        <div className="flex border border-line bg-panel">
+        <div className="grid grid-cols-2 gap-px bg-line border border-line md:flex md:gap-0">
           <StatTile label="Avg score / tracked day" value={avgScore} />
           <StatTile label="Prayer rate" value={prayerRate} unit="%" />
           <StatTile label="Focused" value={focused} unit="h" />
@@ -204,7 +204,7 @@ function DayCell({
 
   return (
     <div
-      className={`relative h-[118px] border-r border-b border-line p-2.5 flex flex-col
+      className={`relative h-[70px] md:h-[118px] border-r border-b border-line p-1.5 md:p-2.5 flex flex-col
         ${otherMonth ? 'opacity-40' : ''}
         ${isToday ? 'border-t-2 border-t-accent border-l-2 border-l-accent' : ''}`}
       style={{ background: ground }}
@@ -214,27 +214,31 @@ function DayCell({
           type="button"
           onClick={blank ? undefined : onOpen}
           disabled={blank}
-          className={`num text-[27px] leading-none font-medium text-left
+          className={`num text-[15px] md:text-[27px] leading-none font-medium text-left
             ${blank ? 'text-faint cursor-default' : 'cursor-pointer hover:text-accent'}`}
         >
           {Number(day.date.slice(8, 10))}
         </button>
-        {isToday && <span className="micro text-accent">Today</span>}
-        {!blank && <span className="num text-[20px] leading-none text-dim">{day.score}</span>}
+        {isToday && <span className="micro text-accent hidden md:inline">Today</span>}
+        {!blank && <span className="num text-[11px] md:text-[20px] leading-none text-dim">{day.score}</span>}
       </div>
 
+      {/* Below the date, a phone-width cell only has room for the one signal
+          that matters most — the score already tints the whole cell, so the
+          marks, tags and note editor (unusable this narrow) fold away; tap
+          the date to open the full day and see or edit them there. */}
       {blank ? (
-        <div className="mt-auto micro">
+        <div className="mt-auto micro hidden md:block">
           {!day.inFuture && labelUntracked ? 'Untracked' : ''}
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-1.5 mt-1.5 h-4">
+          <div className="hidden md:flex items-center gap-1.5 mt-1.5 h-4">
             {day.allPrayers && <MarkAllPrayers size={15} />}
             {day.quitClean && <MarkSmokeFree size={15} />}
           </div>
 
-          <div className="flex gap-2 mt-auto mb-1">
+          <div className="hidden md:flex gap-2 mt-auto mb-1">
             {day.hasSlip && <span className="micro text-missed">Slip</span>}
             {day.hasGrace && <span className="micro text-grace">Grace</span>}
           </div>
@@ -247,7 +251,7 @@ function DayCell({
             onChange={(e) => setNote(e.target.value)}
             onBlur={save}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-            className="!border-0 !bg-transparent !px-0 !py-0 text-[11px] text-dim w-full"
+            className="hidden md:block !border-0 !bg-transparent !px-0 !py-0 text-[11px] text-dim w-full"
           />
         </>
       )}
